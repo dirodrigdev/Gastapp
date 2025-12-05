@@ -1,29 +1,18 @@
 import React from 'react';
-
-import ReactDOM from 'react-dom/client';
-
+import { createRoot } from 'react-dom/client';
 import App from './App';
+// ¡ERROR CORREGIDO! Eliminamos la importación del archivo CSS que no existe
+// import './index.css'; 
 
+const container = document.getElementById('root');
 
-
-
-
-const REFRESH_KEY = Date.now();
-
-
-
-const rootElement = document.getElementById('root');
-
-if (rootElement) {
-
-ReactDOM.createRoot(rootElement).render(
-
-<React.StrictMode>
-
-<App key={REFRESH_KEY} />
-
-</React.StrictMode>
-
-);
-
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  console.error("Error crítico: No se encontró el elemento 'root' en el HTML.");
 }
