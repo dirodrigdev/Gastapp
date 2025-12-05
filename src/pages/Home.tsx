@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
-import { format, isAfter, addDays, isSameDay, isBefore, isEqual } from 'date-fns';
+import { format, isSameDay, isBefore, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Card,
@@ -163,10 +163,6 @@ export const Home = () => {
         periodNumber = (lastReport.numeroPeriodo || 0) + 1;
       }
 
-      // 👉 Parche temporal: ajustar offset para que el periodo actual sea P31 en tu historial
-      const DISPLAY_PERIOD_OFFSET = -7;
-      const displayPeriodNumber = Math.max(1, periodNumber + DISPLAY_PERIOD_OFFSET);
-
       let nextClosingDate = new Date(realStartDate.getFullYear(), realStartDate.getMonth(), diaCierre);
       if (nextClosingDate.getTime() < realStartDate.getTime()) {
         nextClosingDate = new Date(realStartDate.getFullYear(), realStartDate.getMonth() + 1, diaCierre);
@@ -185,7 +181,7 @@ export const Home = () => {
 
       setDaysRemaining(Math.max(0, remaining));
       setPeriodLabel(
-        `P${displayPeriodNumber} (${format(realStartDate, 'd MMM', { locale: es })} - ${format(
+        `P${periodNumber} (${format(realStartDate, 'd MMM', { locale: es })} - ${format(
           nextClosingDate,
           'd MMM',
           { locale: es },
@@ -512,7 +508,7 @@ export const Home = () => {
           onClick={() => setShowBudgetDetails(!showBudgetDetails)}
           aria-expanded={showBudgetDetails}
           aria-label="Ver detalles de presupuestos"
-          className="w-full mt-3 flex items-center justify-center pt-2 text-slate-500 hover:text-white transition-colors"
+          className="w-full mt-3 flex items-center justify-center pt-2 text-slate-500 hover:text-white transición-colors"
         >
           <ChevronUp size={16} aria-hidden="true" />
         </button>
