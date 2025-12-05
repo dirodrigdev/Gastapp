@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>GastApp</title>
     
-    <!-- Estilos base -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Configuración PWA / Móvil -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ffffff">
@@ -19,9 +17,7 @@
         theme: {
           extend: {
             fontFamily: { sans: ['Inter', 'sans-serif'] },
-            colors: {
-              brand: { 50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a' }
-            }
+            colors: { brand: { 50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a' } }
           }
         }
       }
@@ -31,57 +27,46 @@
       body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; background-color: #f8fafc; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      
-      /* Pantalla de carga / error */
-      #error-overlay { display: none; padding: 20px; text-align: center; color: #ef4444; z-index: 9999; position: fixed; top: 0; width: 100%; background: white; }
+      #error-overlay { display: none; padding: 20px; text-align: center; color: #ef4444; position:fixed; top:0; width:100%; z-index:9999; background:white; }
     </style>
 
-    <!-- MAPA DE IMPORTACIONES CORREGIDO -->
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
-    "react-dom": "https://esm.sh/react-dom@18.3.1?deps=react@18.3.1",
-    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime?deps=react@18.3.1",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.23.0?deps=react@18.3.1,react-dom@18.3.1",
-    "lucide-react": "https://esm.sh/lucide-react@0.378.0?deps=react@18.3.1",
-    "clsx": "https://esm.sh/clsx@2.1.1",
-    "date-fns": "https://esm.sh/date-fns@3.6.0",
-    "date-fns/locale": "https://esm.sh/date-fns@3.6.0/locale",
-    "tailwind-merge": "https://esm.sh/tailwind-merge@2.3.0",
-    "firebase/app": "https://esm.sh/firebase@10.11.0/app",
-    "firebase/firestore": "https://esm.sh/firebase@10.11.0/firestore",
-    "firebase/auth": "https://esm.sh/firebase@10.11.0/auth",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.86.2",
-    "date-fns/": "https://aistudiocdn.com/date-fns@^4.1.0/",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
-  }
-}
-</script>
-  <link rel="stylesheet" href="/index.css">
-</head>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.3.1",
+        "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
+        "react-dom": "https://esm.sh/react-dom@18.3.1?deps=react@18.3.1",
+        "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime?deps=react@18.3.1",
+        "react-router-dom": "https://esm.sh/react-router-dom@6.23.0?deps=react@18.3.1,react-dom@18.3.1",
+        "lucide-react": "https://esm.sh/lucide-react@0.378.0?deps=react@18.3.1",
+        "clsx": "https://esm.sh/clsx@2.1.1",
+        "date-fns": "https://esm.sh/date-fns@3.6.0",
+        "date-fns/locale": "https://esm.sh/date-fns@3.6.0/locale",
+        "tailwind-merge": "https://esm.sh/tailwind-merge@2.3.0",
+        "firebase/app": "https://esm.sh/firebase@10.11.0/app",
+        "firebase/firestore": "https://esm.sh/firebase@10.11.0/firestore",
+        "firebase/auth": "https://esm.sh/firebase@10.11.0/auth"
+      }
+    }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
-    
-    <!-- Manejo de errores visible -->
     <div id="error-overlay">
         <h2>⚠️ Error de Carga</h2>
         <p>Si ves esto, intenta recargar la página.</p>
         <p id="error-msg" style="font-size:12px; margin-top:10px; color: #999;"></p>
     </div>
+
     <script>
-      window.onerror = function(message, source, lineno, colno, error) {
+      window.onerror = function(msg, source, lineno, colno, error) {
         console.error(error);
         document.getElementById('error-overlay').style.display = 'block';
         document.getElementById('error-msg').innerText = message;
       };
     </script>
 
-    <!-- CORRECCIÓN AQUÍ: Usamos ./src/index.tsx para ruta relativa local -->
-    <script type="module" src="./src/index.tsx"></script>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <!-- CORRECCIÓN CRÍTICA: Ruta relativa SIN barra inicial -->
+    <script type="module" src="src/index.tsx"></script>
+  </body>
 </html>
