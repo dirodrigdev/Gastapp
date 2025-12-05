@@ -184,4 +184,51 @@ export const calculatePeriodInfo = (
 
 export const getCategoryIcon = (iconName: string) => {
   const iconMap: Record<string, React.ComponentType<any>> = {
-    Home:
+    Home: LucideIcons.Home,
+    ShoppingCart: LucideIcons.ShoppingCart,
+    Utensils: LucideIcons.Utensils,
+    Car: LucideIcons.Car,
+    Heart: LucideIcons.Heart,
+    Zap: LucideIcons.Zap,
+    ShoppingBag: LucideIcons.ShoppingBag,
+    Beer: LucideIcons.Beer,
+    Plane: LucideIcons.Plane,
+    Smartphone: LucideIcons.Smartphone,
+    Tv: LucideIcons.Tv,
+    Scissors: LucideIcons.Scissors,
+    Dumbbell: LucideIcons.Dumbbell,
+    Smile: LucideIcons.Smile,
+    Shirt: LucideIcons.Shirt,
+    AlertCircle: LucideIcons.AlertCircle,
+    // nuevos
+    Dog: (LucideIcons as any).Dog,
+    PawPrint: (LucideIcons as any).PawPrint,
+    General: LucideIcons.CircleDollarSign,
+  };
+
+  return iconMap[iconName] || LucideIcons.CircleDollarSign;
+};
+
+export const ICON_KEYS = [
+  'Home',
+  'ShoppingCart',
+  'Utensils',
+  'Car',
+  'Heart',
+  'Zap',
+  'ShoppingBag',
+  'Beer',
+  'Plane',
+  'Smartphone',
+  'Tv',
+  'Scissors',
+  'Dumbbell',
+  'Smile',
+  'Shirt',
+  'AlertCircle',
+  'Dog',      // perro
+  'PawPrint', // patita
+  'General',
+];
+
+export const ICON_MAP: any = LucideIcons;
