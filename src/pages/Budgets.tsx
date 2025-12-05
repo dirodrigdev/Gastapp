@@ -9,7 +9,7 @@ import {
   parseLocaleNumber,
   calculatePeriodInfo,
   ICON_KEYS,
-  ICON_MAP,
+  getCategoryIcon,
   cn,
 } from '../components/Components';
 import { Category } from '../types';
@@ -215,7 +215,6 @@ export const Budgets = () => {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Categorías</h1>
-          {/* Usamos la etiqueta calculada correctamente */}
           <p className="text-xs text-slate-500 font-medium">{periodLabel}</p>
         </div>
       </div>
@@ -343,7 +342,7 @@ export const Budgets = () => {
                 className="grid grid-cols-6 gap-2"
               >
                 {ICON_KEYS.map((key) => {
-                  const Icon = ICON_MAP[key];
+                  const Icon = getCategoryIcon(key); // 👈 AQUÍ EL CAMBIO CLAVE
                   const isSelected = selectedIconKey === key;
                   return (
                     <button
