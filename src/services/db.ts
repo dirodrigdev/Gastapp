@@ -13,9 +13,12 @@ const REPORTS_COL = 'monthly_reports';
 // --- GASTOS (REAL TIME) ---
 export const subscribeToExpenses = (callback: (data: MonthlyExpense[]) => void) => {
   const q = query(collection(db, EXPENSES_COL));
+  // Agregamos manejo de errores al listener
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MonthlyExpense));
     callback(data);
+  }, (error: any) => {
+    console.error("Error recibiendo gastos:", error);
   });
 };
 
@@ -24,26 +27,31 @@ export const getMonthlyExpenses = async (): Promise<MonthlyExpense[]> => {
     const q = query(collection(db, EXPENSES_COL));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as MonthlyExpense));
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error leyendo gastos:", error);
     return [];
   }
 };
 
 export const addMonthlyExpense = async (expense: Omit<MonthlyExpense, 'id'>): Promise<void> => {
-  try { await addDoc(collection(db, EXPENSES_COL), expense); } catch (e) { console.error(e); }
+  try { 
+      await addDoc(collection(db, EXPENSES_COL), expense); 
+  } catch (e: any) { 
+      console.error("Error al guardar gasto:", e); 
+  }
 };
 
 export const updateMonthlyExpense = async (expense: MonthlyExpense): Promise<void> => {
   if (!expense.id) return;
   try {
+    // Extraemos el id para no guardarlo dentro del documento
     const { id, ...data } = expense;
     await updateDoc(doc(db, EXPENSES_COL, id), data);
-  } catch (e) { console.error(e); }
+  } catch (e: any) { console.error(e); }
 };
 
 export const deleteMonthlyExpense = async (id: string): Promise<void> => {
-  try { await deleteDoc(doc(db, EXPENSES_COL, id)); } catch (e) { console.error(e); }
+  try { await deleteDoc(doc(db, EXPENSES_COL, id)); } catch (e: any) { console.error(e); }
 };
 
 // --- CATEGORÍAS (REAL TIME) ---
@@ -52,6 +60,8 @@ export const subscribeToCategories = (callback: (data: Category[]) => void) => {
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
     callback(data);
+  }, (error: any) => {
+    console.error("Error recibiendo categorías:", error);
   });
 };
 
@@ -77,6 +87,8 @@ export const getCategories = async (): Promise<Category[]> => {
     const snapshot = await getDocs(collection(db, CATEGORIES_COL));
     const cats = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Category));
     if (cats.length === 0) {
+        // Intentamos crear las categorías por defecto solo si está vacío
+        console.log("Inicializando categorías...");
         for (const c of DEFAULT_CATEGORIES) {
              const { id, ...rest } = c;
              await addDoc(collection(db, CATEGORIES_COL), rest);
@@ -84,7 +96,10 @@ export const getCategories = async (): Promise<Category[]> => {
         return DEFAULT_CATEGORIES;
     }
     return cats;
-  } catch (error) { return DEFAULT_CATEGORIES; }
+  } catch (error: any) { 
+    console.error("Error cargando categorías:", error);
+    return DEFAULT_CATEGORIES; 
+  }
 };
 
 export const saveCategory = async (category: Category): Promise<void> => {
@@ -96,11 +111,11 @@ export const saveCategory = async (category: Category): Promise<void> => {
        const { id, ...data } = category;
        await addDoc(collection(db, CATEGORIES_COL), data);
     }
-  } catch (error) { console.error(error); }
+  } catch (error: any) { console.error(error); }
 };
 
 export const deleteCategory = async (id: string) => {
-    try { await deleteDoc(doc(db, CATEGORIES_COL, id)); } catch(e) { console.error(e); }
+    try { await deleteDoc(doc(db, CATEGORIES_COL, id)); } catch(e: any) { console.error(e); }
 };
 
 // --- CONFIG & REPORTES ---
@@ -112,18 +127,21 @@ export const getClosingConfig = async (): Promise<ClosingConfig> => {
         const def: ClosingConfig = { tipo: 'diaFijo', diaFijo: 11 };
         await setDoc(ref, def);
         return def;
-    } catch (e) { return { tipo: 'diaFijo', diaFijo: 11 }; }
+    } catch (e: any) { 
+        console.warn("No se pudo cargar config, usando default local");
+        return { tipo: 'diaFijo', diaFijo: 11 }; 
+    }
 };
 
 export const saveClosingConfig = async (config: ClosingConfig) => {
-    try { await setDoc(doc(db, CONFIG_COL, 'main_config'), config); } catch(e) { console.error(e); }
+    try { await setDoc(doc(db, CONFIG_COL, 'main_config'), config); } catch(e: any) { console.error(e); }
 };
 
 export const getMonthlyReports = async (): Promise<MonthlyReport[]> => {
     try {
         const snap = await getDocs(collection(db, REPORTS_COL));
         return snap.docs.map(d => ({ id: d.id, ...d.data() } as MonthlyReport));
-    } catch(e) { return []; }
+    } catch(e: any) { return []; }
 };
 
 export const generateClosingReport = async (date: Date): Promise<void> => {
@@ -139,5 +157,5 @@ export const generateClosingReport = async (date: Date): Promise<void> => {
         estado: 'cerrado',
         detalles: [] 
     };
-    try { await addDoc(collection(db, REPORTS_COL), newReport); } catch(e) { console.error(e); }
+    try { await addDoc(collection(db, REPORTS_COL), newReport); } catch(e: any) { console.error(e); }
 };
