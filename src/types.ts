@@ -1,6 +1,6 @@
 export type User = 'Diego' | 'Gastón';
 
-// Deprecated: Use dynamic categories instead
+// Categorías heredadas (por si acaso)
 export enum ExpenseCategoryLegacy {
   FOOD = 'Comida',
   TRANSPORT = 'Transporte',
@@ -26,7 +26,7 @@ export enum Currency {
 
 export type CurrencyType = Currency | string;
 
-// --- NEW DYNAMIC STRUCTURES ---
+// --- ESTRUCTURAS DINÁMICAS ---
 
 export interface Category {
   id: string;
@@ -42,24 +42,24 @@ export interface ClosingConfig {
 }
 
 export interface CategoryReportDetail {
-  categoryId?: string; // Opcional para soportar datos históricos
+  categoryId?: string; // Opcional para datos históricos antiguos
   categoryName: string;
   presupuesto: number;
   gastoReal: number;
-  diferencia?: number; // Opcional para soportar datos históricos
+  diferencia?: number; // Opcional
 }
 
 export interface MonthlyReport {
   id: string;
-  anio?: number; // Opcional
-  mes?: number;  // Opcional
+  anio?: number;
+  mes?: number;
   
   numeroPeriodo: number;
   fechaInicio?: string;
   fechaFin: string;
   fechaCierre: string;
   
-  estado?: string; // ¡Campo Nuevo Agregado! (Soluciona error TS2353)
+  estado?: string; // Campo opcional para compatibilidad con datos históricos
 
   detalles: CategoryReportDetail[];
   totalGlobalPresupuesto: number;
@@ -67,11 +67,11 @@ export interface MonthlyReport {
   totalGlobalDiferencia: number;
 }
 
-// --- EXISTING ENTITIES UPDATED ---
+// --- ENTIDADES PRINCIPALES ---
 
 export interface MonthlyExpense {
   id?: string;
-  fecha: string;
+  fecha: string; // ISO string
   monto: number;
   moneda: CurrencyType;
   categoria: string; 
