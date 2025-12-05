@@ -10,12 +10,24 @@ export function cn(...inputs: ClassValue[]) { // EXPORTADO
 
 // --- UI COMPONENTS ---
 
-export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => ( // EXPORTADO
-  <div ref={ref} className={cn("rounded-2xl bg-white border border-slate-200 shadow-sm", className)} {...props} />
-));
+export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => ( // EXPORTADO
+    <div
+      ref={ref}
+      className={cn("rounded-2xl bg-white border border-slate-200 shadow-sm", className)}
+      {...props}
+    />
+  )
+);
 Card.displayName = "Card";
 
-export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger', size?: 'sm' | 'md' | 'lg' | 'icon' }>( // EXPORTADO
+export const Button = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger',
+    size?: 'sm' | 'md' | 'lg' | 'icon'
+  }
+>( // EXPORTADO
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
       primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-95",
@@ -31,15 +43,35 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
       icon: "h-10 w-10 p-2 flex items-center justify-center"
     };
     return (
-      <button ref={ref} className={cn("inline-flex items-center justify-center rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50", variants[variant], sizes[size], className)} {...props} />
+      <button
+        ref={ref}
+        className={cn(
+          "inline-flex items-center justify-center rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50",
+          variants[variant],
+          sizes[size],
+          className
+        )}
+        {...props}
+      />
     );
   }
 );
 Button.displayName = "Button";
 
-export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className, type, ...props }, ref) => { // EXPORTADO
+export const Input = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, type, ...props }, ref) => { // EXPORTADO
   return (
-    <input type={type} className={cn("flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50", className)} ref={ref} {...props} />
+    <input
+      type={type}
+      className={cn(
+        "flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
   );
 });
 Input.displayName = "Input";
@@ -75,18 +107,26 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 );
 Select.displayName = "Select";
 
-
-export const SwipeRow = ({ children, onDelete }: { children: React.ReactNode, onDelete: () => void }) => { // EXPORTADO
+export const SwipeRow = ({
+  children,
+  onDelete,
+}: {
+  children: React.ReactNode,
+  onDelete: () => void
+}) => { // EXPORTADO
   return (
     <div className="relative group overflow-hidden rounded-xl">
-       <div className="absolute inset-y-0 right-0 w-16 bg-red-500 flex items-center justify-center text-white z-0" onClick={onDelete}>
-         <LucideIcons.Trash2 size={20} />
-       </div>
-       <div className="relative z-10 bg-white transition-transform group-hover:-translate-x-2">
-          {children}
-       </div>
+      <div
+        className="absolute inset-y-0 right-0 w-16 bg-red-500 flex items-center justify-center text-white z-0"
+        onClick={onDelete}
+      >
+        <LucideIcons.Trash2 size={20} />
+      </div>
+      <div className="relative z-10 bg-white transition-transform group-hover:-translate-x-2">
+        {children}
+      </div>
     </div>
-  )
+  );
 };
 
 // --- HELPERS ---
@@ -107,38 +147,81 @@ export const formatLocaleNumber = (amount: number, decimals: number = 0): string
   return decimals > 0 ? `${intFormatted},${decPart}` : intFormatted;
 };
 
-export const calculatePeriodInfo = (currentDate: Date = new Date(), closingDay: number = 11) => { // EXPORTADO
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const day = currentDate.getDate();
+export const calculatePeriodInfo = (
+  currentDate: Date = new Date(),
+  closingDay: number = 11
+) => { // EXPORTADO
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const day = currentDate.getDate();
 
-    let startDate: Date;
-    let endDate: Date;
-    
-    if (day > closingDay) {
-        startDate = new Date(year, month, closingDay + 1);
-        endDate = new Date(year, month + 1, closingDay);
-    } else {
-        startDate = new Date(year, month - 1, closingDay + 1);
-        endDate = new Date(year, month, closingDay);
-    }
+  let startDate: Date;
+  let endDate: Date;
 
-    const periodNumber = (startDate.getFullYear() - 2023) * 12 + startDate.getMonth() + 4; 
+  if (day > closingDay) {
+    startDate = new Date(year, month, closingDay + 1);
+    endDate = new Date(year, month + 1, closingDay);
+  } else {
+    startDate = new Date(year, month - 1, closingDay + 1);
+    endDate = new Date(year, month, closingDay);
+  }
 
-    return { startDate, endDate, periodNumber, label: `P${periodNumber}` };
+  const periodNumber = (startDate.getFullYear() - 2023) * 12 + startDate.getMonth() + 4;
+
+  return { startDate, endDate, periodNumber, label: `P${periodNumber}` };
 };
+
+// --- ICONOS CATEGORÍA ---
 
 export const getCategoryIcon = (iconName: string) => { // EXPORTADO
-    const iconMap: any = {
-        'Home': LucideIcons.Home, 'ShoppingCart': LucideIcons.ShoppingCart, 'Utensils': LucideIcons.Utensils,
-        'Car': LucideIcons.Car, 'Heart': LucideIcons.Heart, 'Zap': LucideIcons.Zap, 
-        'ShoppingBag': LucideIcons.ShoppingBag, 'Beer': LucideIcons.Beer, 'Plane': LucideIcons.Plane,
-        'Smartphone': LucideIcons.Smartphone, 'Tv': LucideIcons.Tv, 'Scissors': LucideIcons.Scissors,
-        'Dumbbell': LucideIcons.Dumbbell, 'Smile': LucideIcons.Smile, 'Shirt': LucideIcons.Shirt,
-        'AlertCircle': LucideIcons.AlertCircle, 'General': LucideIcons.CircleDollarSign
-    };
-    return iconMap[iconName] || LucideIcons.CircleDollarSign;
+  const icons: Record<string, any> = {
+    Home:         LucideIcons.Home,
+    ShoppingCart: LucideIcons.ShoppingCart,
+    Utensils:     LucideIcons.Utensils,
+    Car:          LucideIcons.Car,
+    Heart:        LucideIcons.Heart,
+    Zap:          LucideIcons.Zap,
+    ShoppingBag:  LucideIcons.ShoppingBag,
+    Beer:         LucideIcons.Beer,
+    Plane:        LucideIcons.Plane,
+    Smartphone:   LucideIcons.Smartphone,
+    Tv:           LucideIcons.Tv,
+    Scissors:     LucideIcons.Scissors,
+    Dumbbell:     LucideIcons.Dumbbell,
+    Smile:        LucideIcons.Smile,
+    Shirt:        LucideIcons.Shirt,
+    AlertCircle:  LucideIcons.AlertCircle,
+
+    // 🐶 Perro y 🐾 huella (acceso seguro por índice para evitar errores de TS si no existen)
+    Dog:       (LucideIcons as any).Dog,
+    PawPrint:  (LucideIcons as any).PawPrint,
+
+    General:     LucideIcons.CircleDollarSign,
+  };
+
+  return icons[iconName] || LucideIcons.CircleDollarSign;
 };
 
-export const ICON_KEYS = ['Home','ShoppingCart','Utensils','Car','Heart','Zap','ShoppingBag','Beer','Plane','Smartphone','Tv','Scissors','Dumbbell','Smile','Shirt','AlertCircle'];
+export const ICON_KEYS = [ // EXPORTADO
+  'Home',
+  'ShoppingCart',
+  'Utensils',
+  'Car',
+  'Heart',
+  'Zap',
+  'ShoppingBag',
+  'Beer',
+  'Plane',
+  'Smartphone',
+  'Tv',
+  'Scissors',
+  'Dumbbell',
+  'Smile',
+  'Shirt',
+  'AlertCircle',
+  'Dog',       // 🐶
+  'PawPrint',  // 🐾
+  'General',   // símbolo $ genérico
+];
+
 export const ICON_MAP: any = LucideIcons; // EXPORTADO
