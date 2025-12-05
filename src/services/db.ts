@@ -18,7 +18,6 @@ import {
   Category,
   ClosingConfig,
   MonthlyReport,
-
   Project,
   ProjectExpense,
 } from '../types';
@@ -82,10 +81,17 @@ export const subscribeToCategories = (
   const q = query(categoriesCol, orderBy('nombre'));
 
   const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data: Category[] = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...(d.data() as Omit<Category, 'id'>),
-    }));
+    const data: Category[] = snapshot.docs.map((d) => {
+      const raw = d.data() as any;
+      return {
+        id: d.id,
+        nombre: raw.nombre ?? '',
+        presupuestoMensual: raw.presupuestoMensual ?? 0,
+        activa: raw.activa ?? true,
+        // 👇 clave: traer el icono que elegiste en Presupuestos
+        icono: raw.icono ?? 'General',
+      } as Category;
+    });
     callback(data);
   });
 
@@ -94,10 +100,16 @@ export const subscribeToCategories = (
 
 export const getCategories = async (): Promise<Category[]> => {
   const snap = await getDocs(query(categoriesCol, orderBy('nombre')));
-  return snap.docs.map((d) => ({
-    id: d.id,
-    ...(d.data() as Omit<Category, 'id'>),
-  }));
+  return snap.docs.map((d) => {
+    const raw = d.data() as any;
+    return {
+      id: d.id,
+      nombre: raw.nombre ?? '',
+      presupuestoMensual: raw.presupuestoMensual ?? 0,
+      activa: raw.activa ?? true,
+      icono: raw.icono ?? 'General',
+    } as Category;
+  });
 };
 
 export const saveCategory = async (cat: Category): Promise<void> => {
