@@ -386,7 +386,7 @@ export const Home = () => {
           </div>
           <div className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-50" role="list">
               {currentExpenses.sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 5).map(item => {
-                  const Icon = getCategoryIcon(item.categoria);
+                  const Icon = getCategoryIcon(cat?.icono || 'General');
                   return (
                       <div role="listitem" key={item.id} onClick={() => handleEditClick(item)} className="p-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer">
                           <div className="flex items-center gap-3">
