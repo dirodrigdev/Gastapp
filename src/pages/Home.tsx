@@ -36,10 +36,9 @@ export const Home = () => {
     // Suscripción a gastos y categorías
     const unsubscribeExpenses = subscribeToExpenses((data) => setExpenses(data));
     const unsubscribeCategories = subscribeToCategories((data) => {
-      setCategories(data);
-      // Intentar forzar la creación de categorías si están vacías al cargar
-      if (data.length === 0) getCategories();
-    });
+  setCategories(data);
+});
+
     
     initData();
 
