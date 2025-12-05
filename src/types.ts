@@ -1,6 +1,6 @@
 export type User = 'Diego' | 'Gastón';
 
-// Deprecated: Use dynamic categories instead, but kept for migration if needed
+// Deprecated: Use dynamic categories instead
 export enum ExpenseCategoryLegacy {
   FOOD = 'Comida',
   TRANSPORT = 'Transporte',
@@ -33,32 +33,33 @@ export interface Category {
   nombre: string;
   presupuestoMensual: number;
   activa: boolean;
-  icono?: string; // Optional icon identifier
+  icono?: string;
 }
 
 export interface ClosingConfig {
   tipo: 'ultimoDia' | 'diaFijo';
-  diaFijo?: number; // 1-31
+  diaFijo?: number;
 }
 
 export interface CategoryReportDetail {
-  categoryId: string;
+  categoryId?: string; // Opcional para soportar datos históricos
   categoryName: string;
   presupuesto: number;
   gastoReal: number;
-  diferencia: number; // Presupuesto - Gasto
+  diferencia?: number; // Opcional para soportar datos históricos
 }
 
 export interface MonthlyReport {
   id: string;
-  anio: number;
-  mes: number; // 0-11
+  anio?: number; // Opcional
+  mes?: number;  // Opcional
   
-  // New fields for precise period tracking
   numeroPeriodo: number;
-  fechaInicio: string; // ISO string
-  fechaFin: string;    // ISO string (Fecha de Cierre efectivo)
-  fechaCierre: string; // ISO string (Timestamp de creación)
+  fechaInicio?: string;
+  fechaFin: string;
+  fechaCierre: string;
+  
+  estado?: string; // ¡Campo Nuevo Agregado! (Soluciona error TS2353)
 
   detalles: CategoryReportDetail[];
   totalGlobalPresupuesto: number;
@@ -70,7 +71,7 @@ export interface MonthlyReport {
 
 export interface MonthlyExpense {
   id?: string;
-  fecha: string; // ISO date string
+  fecha: string;
   monto: number;
   moneda: CurrencyType;
   categoria: string; 
