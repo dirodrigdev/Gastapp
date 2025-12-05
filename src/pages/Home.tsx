@@ -4,7 +4,7 @@ import { format, isAfter, addDays, isSameDay, isBefore, isEqual } from 'date-fns
 import { es } from 'date-fns/locale';
 // RUTA CORREGIDA: Se usa '../components/...' para acceder a los componentes desde /pages
 import { Card, Button, calculatePeriodInfo, getCategoryIcon, parseLocaleNumber, formatLocaleNumber, Input, cn } from '../components/Components'; 
-import { subscribeToExpenses, subscribeToCategories, addMonthlyExpense, updateMonthlyExpense, deleteMonthlyExpense, getClosingConfig, getMonthlyReports } from '../services/db';
+import { subscribeToExpenses, subscribeToCategories, addMonthlyExpense, updateMonthlyExpense, deleteMonthlyExpense, getClosingConfig, getMonthlyReports, saveCategory, } from '../services/db';
 import { MonthlyExpense, Category } from '../types';
 import { EditExpenseModal } from '../components/EditExpenseModal';
 
