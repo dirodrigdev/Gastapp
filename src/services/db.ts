@@ -18,6 +18,7 @@ import {
   Category,
   ClosingConfig,
   MonthlyReport,
+  saveCategory,
   Project,
   ProjectExpense,
 } from '../types';
