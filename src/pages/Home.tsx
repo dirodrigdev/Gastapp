@@ -304,7 +304,7 @@ export const Home = () => {
 
             <div role="group" aria-label="Categoría del gasto" className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
                 {sortedCategories.map(cat => {
-                    const Icon = getCategoryIcon(cat.nombre);
+                    const Icon = getCategoryIcon(cat.icono || 'General');
                     const isSelected = selectedCatName === cat.nombre;
                     return (
                         <button key={cat.id} type="button" aria-pressed={isSelected} onClick={() => setSelectedCatName(cat.nombre)} className={cn("flex flex-col items-center gap-1 min-w-[64px] p-2 rounded-xl transition-all border", isSelected ? "bg-blue-600 border-blue-600 text-white shadow-md scale-105" : "bg-white border-slate-100 text-slate-500 hover:bg-slate-50")}>
@@ -361,7 +361,7 @@ export const Home = () => {
           <div className="space-y-2 animate-in slide-in-from-top-2">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Estado de Presupuestos</h3>
               {categoryStats.map(cat => {
-                  const Icon = getCategoryIcon(cat.nombre);
+                  const Icon = getCategoryIcon(cat.icono || 'General');
                   const isFixed = isFixedCategory(cat.nombre);
                   let colorClass = "bg-green-500";
                   if (cat.percent > 100) { colorClass = "bg-red-500"; } else if (!isFixed && cat.percent > (timePercent + 5)) { colorClass = "bg-yellow-500"; }
