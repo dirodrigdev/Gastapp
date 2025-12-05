@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
 import { format, isAfter, addDays, isSameDay, isBefore, isEqual } from 'date-fns';
 import { es } from 'date-fns/locale';
-// RUTA CORREGIDA: Se usa '../components/...' para acceder a los componentes desde /pages
 import {
   Card,
   Button,
@@ -53,37 +52,26 @@ export const Home = () => {
 
   // --- CONEXIÓN EN TIEMPO REAL ---
   useEffect(() => {
-    // Suscripción a gastos
     const unsubscribeExpenses = subscribeToExpenses((data) => setExpenses(data));
 
-    // Suscripción a categorías + migración desde localStorage si Firestore está vacío
     const unsubscribeCategories = subscribeToCategories((data) => {
-      // Si Firestore viene vacío, intentamos rescatar categorías guardadas en el navegador
       if (data.length === 0) {
         const legacy = localStorage.getItem('categories');
         if (legacy) {
           try {
             const parsed: Category[] = JSON.parse(legacy);
-
-            // Las usamos inmediatamente para que aparezcan los botones
             setCategories(parsed);
-
-            // Y las subimos a Firestore en segundo plano
             parsed.forEach((cat) => {
               saveCategory(cat).catch((err) =>
                 console.error('Error migrando categoría legacy', err),
               );
             });
-
-            // Salimos: esperamos al siguiente snapshot ya con datos de Firestore
             return;
           } catch (e) {
             console.error('No se pudieron parsear las categorías legacy', e);
           }
         }
       }
-
-      // Caso normal: usar lo que venga de Firestore
       setCategories(data);
     });
 
@@ -106,14 +94,13 @@ export const Home = () => {
     }
   }, [activeStartDate]);
 
-  // Recalcular orden de categorías cuando cambian los gastos o las categorías base
+  // Reordenar categorías según uso dentro del periodo activo
   useEffect(() => {
     if (categories.length === 0) {
       setSortedCategories([]);
       return;
     }
 
-    // Contamos usos SOLO dentro del período activo, para que lo que más usas ahora se vaya a la izquierda
     const startDate = new Date(activeStartDate);
     startDate.setHours(0, 0, 0, 0);
 
@@ -131,7 +118,6 @@ export const Home = () => {
       const countA = usageCount[a.nombre] || 0;
       const countB = usageCount[b.nombre] || 0;
 
-      // Primero, las más usadas; si empatan, orden alfabético estable
       if (countA !== countB) {
         return countB - countA;
       }
@@ -142,7 +128,7 @@ export const Home = () => {
     setSortedCategories(sorted);
   }, [expenses, categories, activeStartDate]);
 
-  // Helper ROBUSTO para formato de moneda (Miles con punto)
+  // Helper para formato de moneda
   const formatMoney = (amount: number, decimals: number = 0) => {
     let num = Number(amount);
     if (isNaN(num)) num = 0;
@@ -152,7 +138,6 @@ export const Home = () => {
     return decimals > 0 ? `${intFormatted},${decPart}` : intFormatted;
   };
 
-  // RUTA ROBUSTA DE FORMATO PARA DECIMALES EN MOVIMIENTOS
   const formatWithDecimals = (val: number) => formatLocaleNumber(val, 2);
 
   const initData = async () => {
@@ -178,6 +163,10 @@ export const Home = () => {
         periodNumber = (lastReport.numeroPeriodo || 0) + 1;
       }
 
+      // 👉 Parche temporal: ajustar offset para que el periodo actual sea P31 en tu historial
+      const DISPLAY_PERIOD_OFFSET = -7;
+      const displayPeriodNumber = Math.max(1, periodNumber + DISPLAY_PERIOD_OFFSET);
+
       let nextClosingDate = new Date(realStartDate.getFullYear(), realStartDate.getMonth(), diaCierre);
       if (nextClosingDate.getTime() < realStartDate.getTime()) {
         nextClosingDate = new Date(realStartDate.getFullYear(), realStartDate.getMonth() + 1, diaCierre);
@@ -196,7 +185,7 @@ export const Home = () => {
 
       setDaysRemaining(Math.max(0, remaining));
       setPeriodLabel(
-        `P${periodNumber} (${format(realStartDate, 'd MMM', { locale: es })} - ${format(
+        `P${displayPeriodNumber} (${format(realStartDate, 'd MMM', { locale: es })} - ${format(
           nextClosingDate,
           'd MMM',
           { locale: es },
@@ -209,7 +198,6 @@ export const Home = () => {
 
   const handleAmountBlur = () => {
     const val = parseLocaleNumber(amount);
-    // Usar formato con decimales al editar
     if (val > 0) setAmount(formatWithDecimals(val));
   };
 
@@ -275,7 +263,7 @@ export const Home = () => {
     return format(dateObj, 'd MMM', { locale: es }).toUpperCase();
   };
 
-  // --- LOGIC: SMART STATUS & PROGRESS ---
+  // --- LÓGICA DE RESUMEN / PRESUPUESTOS ---
   const currentExpenses = expenses.filter((e) => {
     const expenseDate = new Date(e.fecha);
     expenseDate.setHours(0, 0, 0, 0);
@@ -290,6 +278,11 @@ export const Home = () => {
     const percent = cat.presupuestoMensual > 0 ? (spent / cat.presupuestoMensual) * 100 : 0;
     return { ...cat, spent, percent };
   });
+
+  // 👉 Orden para el bloque de “Estado de Presupuestos”: mayor % consumido primero
+  const categoryStatsSortedByPercent = [...categoryStats].sort(
+    (a, b) => b.percent - a.percent
+  );
 
   const totalBudget = categoryStats.reduce((acc, c) => acc + c.presupuestoMensual, 0);
   const totalSpent = categoryStats.reduce((acc, c) => acc + c.spent, 0);
@@ -439,7 +432,7 @@ export const Home = () => {
         </form>
       </Card>
 
-      {/* Monthly Summary - Totales SIN decimales */}
+      {/* Monthly Summary */}
       <Card className="bg-slate-900 text-white p-5 border-none shadow-xl relative overflow-hidden">
         <div className="flex justify-between items-start">
           <div className="z-10">
@@ -462,11 +455,13 @@ export const Home = () => {
                   style={{ width: `${Math.min(100, totalPercentReal)}%` }}
                 ></div>
               </div>
-              <span className="text-xs text-slate-400">Límite: € {formatMoney(totalBudget, 0)}</span>
+              <span className="text-xs text-slate-400">
+                Límite: € {formatMoney(totalBudget, 0)}
+              </span>
             </div>
           </div>
 
-          {/* Donut Chart */}
+          {/* Donut */}
           <div className="relative h-16 w-16" aria-hidden="true">
             <svg className="w-full h-full" viewBox="0 0 64 64">
               <circle
@@ -523,13 +518,13 @@ export const Home = () => {
         </button>
       </Card>
 
-      {/* Budget Details */}
+      {/* Budget Details: ahora ordenado por % consumido */}
       {showBudgetDetails && (
         <div className="space-y-2 animate-in slide-in-from-top-2">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
             Estado de Presupuestos
           </h3>
-          {categoryStats.map((cat) => {
+          {categoryStatsSortedByPercent.map((cat) => {
             const Icon = getCategoryIcon(cat.icono || 'General');
             const isFixed = isFixedCategory(cat.nombre);
             let colorClass = 'bg-green-500';
@@ -574,7 +569,7 @@ export const Home = () => {
         </div>
       )}
 
-      {/* Recent Activity */}
+      {/* Últimos movimientos */}
       <div>
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
