@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge';
 import * as LucideIcons from 'lucide-react';
 
 // Utility para unir clases de Tailwind sin conflictos
-export function cn(...inputs: ClassValue[]) { // EXPORTADO
+export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
@@ -171,8 +171,9 @@ export const calculatePeriodInfo = (
     endDate = new Date(year, month, closingDay);
   }
 
+  // Ajuste de numeración: P1 = mayo 2023
   const periodNumber =
-    (startDate.getFullYear() - 2023) * 12 + startDate.getMonth() + 4;
+    (startDate.getFullYear() - 2023) * 12 + startDate.getMonth() - 3;
 
   return { startDate, endDate, periodNumber, label: `P${periodNumber}` };
 };
