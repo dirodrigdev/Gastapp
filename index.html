@@ -52,21 +52,12 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="error-overlay">
-        <h2>⚠️ Error de Carga</h2>
-        <p>Si ves esto, intenta recargar la página.</p>
-        <p id="error-msg" style="font-size:12px; margin-top:10px; color: #999;"></p>
-    </div>
-
+    <div id="error-overlay"><h2>Cargando...</h2></div>
     <script>
-      window.onerror = function(msg, source, lineno, colno, error) {
-        console.error(error);
-        document.getElementById('error-overlay').style.display = 'block';
-        document.getElementById('error-msg').innerText = message;
+      window.onerror = function(msg) {
+        document.getElementById('error-overlay').innerHTML = `<h2>Error</h2><p>${msg}</p>`;
       };
     </script>
-
-    <!-- CORRECCIÓN CRÍTICA: Ruta relativa SIN barra inicial -->
-    <script type="module" src="src/index.tsx"></script>
+    <script type="module" src="./src/index.tsx"></script>
   </body>
 </html>
