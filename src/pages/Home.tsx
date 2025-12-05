@@ -31,22 +31,50 @@ export const Home = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<MonthlyExpense | null>(null);
 
-  // --- CONEXIÓN EN TIEMPO REAL ---
+    // --- CONEXIÓN EN TIEMPO REAL ---
   useEffect(() => {
-    // Suscripción a gastos y categorías
+    // Suscripción a gastos
     const unsubscribeExpenses = subscribeToExpenses((data) => setExpenses(data));
-    const unsubscribeCategories = subscribeToCategories((data) => {
-  setCategories(data);
-});
 
-    
+    // Suscripción a categorías + migración desde localStorage si Firestore está vacío
+    const unsubscribeCategories = subscribeToCategories((data) => {
+      // Si Firestore viene vacío, intentamos rescatar categorías guardadas en el navegador
+      if (data.length === 0) {
+        const legacy = localStorage.getItem('categories');
+        if (legacy) {
+          try {
+            const parsed: Category[] = JSON.parse(legacy);
+
+            // Las usamos inmediatamente para que aparezcan los botones
+            setCategories(parsed);
+
+            // Y las subimos a Firestore en segundo plano
+            parsed.forEach((cat) => {
+              saveCategory(cat).catch((err) =>
+                console.error('Error migrando categoría legacy', err),
+              );
+            });
+
+            // Salimos: esperamos al siguiente snapshot ya con datos de Firestore
+            return;
+          } catch (e) {
+            console.error('No se pudieron parsear las categorías legacy', e);
+          }
+        }
+      }
+
+      // Caso normal: usar lo que venga de Firestore
+      setCategories(data);
+    });
+
     initData();
 
     return () => {
-        unsubscribeExpenses();
-        unsubscribeCategories();
+      unsubscribeExpenses();
+      unsubscribeCategories();
     };
   }, []);
+
 
   // Forzar fecha mínima si estamos en el "limbo"
   useEffect(() => {
