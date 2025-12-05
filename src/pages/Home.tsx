@@ -379,30 +379,70 @@ export const Home = () => {
           </div>
       )}
 
-      {/* Recent Activity */}
+            {/* Recent Activity */}
       <div>
-          <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Últimos Movimientos</h3>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-50" role="list">
-              {currentExpenses.sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).slice(0, 5).map(item => {
-                  const Icon = getCategoryIcon(cat?.icono || 'General');
-                  return (
-                      <div role="listitem" key={item.id} onClick={() => handleEditClick(item)} className="p-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer">
-                          <div className="flex items-center gap-3">
-                              <div className="bg-brand-50 text-brand-600 p-2 rounded-lg"><Icon size={18} aria-hidden="true" /></div>
-                              <div><p className="text-sm font-bold text-slate-800">{item.categoria}</p><p className="text-xs text-slate-400">{item.descripcion || format(new Date(item.fecha), 'dd MMM')}</p></div>
-                          </div>
-                          <div className="text-right">
-                              <p className="text-sm font-bold text-slate-900">-€{formatWithDecimals(item.monto)}</p>
-                              <p className="text-[10px] text-slate-400 uppercase">{item.creado_por_usuario_id.substring(0,3)}</p>
-                          </div>
-                      </div>
-                  )
-              })}
-              {currentExpenses.length === 0 && <div className="p-6 text-center text-slate-400 text-sm">Sin movimientos este periodo</div>}
-          </div>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+            Últimos Movimientos
+          </h3>
+        </div>
+        <div
+          className="bg-white rounded-xl border border-slate-100 divide-y divide-slate-50"
+          role="list"
+        >
+          {currentExpenses
+            .sort(
+              (a, b) =>
+                new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+            )
+            .slice(0, 5)
+            .map((item) => {
+              // Buscar la categoría correspondiente para recuperar su icono
+              const cat = categories.find(
+                (c) => c.nombre === item.categoria,
+              );
+              const Icon = getCategoryIcon(cat?.icono || 'General');
+
+              return (
+                <div
+                  role="listitem"
+                  key={item.id}
+                  onClick={() => handleEditClick(item)}
+                  className="p-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-brand-50 text-brand-600 p-2 rounded-lg">
+                      <Icon size={18} aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">
+                        {item.categoria}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {item.descripcion ||
+                          format(new Date(item.fecha), 'dd MMM')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-slate-900">
+                      -€{formatWithDecimals(item.monto)}
+                    </p>
+                    <p className="text-[10px] text-slate-400 uppercase">
+                      {item.creado_por_usuario_id.substring(0, 3)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          {currentExpenses.length === 0 && (
+            <div className="p-6 text-center text-slate-400 text-sm">
+              Sin movimientos este periodo
+            </div>
+          )}
+        </div>
       </div>
+
 
       <EditExpenseModal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} expense={selectedExpense} onSave={handleUpdateExpense} onDelete={handleDeleteExpense} />
     </div>
