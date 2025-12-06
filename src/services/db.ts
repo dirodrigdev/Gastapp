@@ -1,5 +1,3 @@
-// src/services/db.ts
-
 import { db } from './firebase';
 import {
   collection,
@@ -122,7 +120,7 @@ export const deleteCategory = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'categories', id));
 };
 
-// ========================= PROYECTOS / VIAJES =========================
+// ========================= PROYECTOS =========================
 
 export const getProjects = async (): Promise<Project[]> => {
   const snap = await getDocs(query(projectsCol, orderBy('created_at', 'desc')));
@@ -140,6 +138,16 @@ export const createProject = async (
     created_at: new Date().toISOString(),
   };
   await addDoc(projectsCol, payload);
+};
+
+export const updateProject = async (project: Project): Promise<void> => {
+  if (!project.id) throw new Error('updateProject: falta id');
+  const { id, ...rest } = project;
+  await updateDoc(doc(db, 'projects', id), rest as any);
+};
+
+export const deleteProject = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'projects', id));
 };
 
 export const getProjectExpenses = async (
@@ -160,7 +168,11 @@ export const getProjectExpenses = async (
 export const addProjectExpense = async (
   expense: Omit<ProjectExpense, 'id'>,
 ): Promise<void> => {
-  await addDoc(projectExpensesCol, expense);
+  const payload: Omit<ProjectExpense, 'id'> = {
+    ...expense,
+    created_at: new Date().toISOString(),
+  };
+  await addDoc(projectExpensesCol, payload);
 };
 
 export const updateProjectExpense = async (
@@ -217,16 +229,13 @@ export const generateClosingReport = async (
 
   const start = new Date(end);
   if (config.tipo === 'diaFijo') {
-    // Periodo: desde el mismo día del mes anterior
     start.setMonth(start.getMonth() - 1);
     start.setDate(diaFijo);
   } else {
-    // Periodo: mes calendario anterior
     start.setMonth(start.getMonth() - 1);
     start.setDate(1);
   }
 
-  // Cargar gastos del periodo
   const q = query(
     expensesCol,
     where('fecha', '>=', start.toISOString()),
@@ -238,7 +247,6 @@ export const generateClosingReport = async (
     ...(d.data() as Omit<MonthlyExpense, 'id'>),
   }));
 
-  // Cargar categorías para obtener presupuestos
   const categories = await getCategories();
 
   const map = new Map<
