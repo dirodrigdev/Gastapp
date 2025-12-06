@@ -4,11 +4,10 @@ import {
   Home as HomeIcon,
   Clock,
   Settings as SettingsIcon,
-  Layers,
   PieChart,
   Plane,
 } from 'lucide-react';
-import { cn } from './Components';
+import { cn, ConnectionBanner } from './Components';
 
 export const Layout: React.FC = () => {
   const location = useLocation();
@@ -25,7 +24,7 @@ export const Layout: React.FC = () => {
       label: 'Historial',
       icon: Clock,
     },
-    // 👉 NUEVO: Viajes (visible solo para Diego, por ahora)
+    // 👉 Viajes (visible solo para Diego, por ahora)
     {
       to: '/trips',
       label: 'Viajes',
@@ -46,6 +45,9 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Banner de conexión: aparece solo si no hay internet */}
+      <ConnectionBanner />
+
       <main className="flex-1 max-w-md mx-auto w-full pb-20">
         <Outlet />
       </main>
