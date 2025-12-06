@@ -121,7 +121,9 @@ export const deleteCategory = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'categories', id));
 };
 
-// ========================= PROYECTOS =========================
+// ========================= PROYECTOS / VIAJES =========================
+
+// --- LECTURA SIMPLE (una vez) ---
 
 export const getProjects = async (): Promise<Project[]> => {
   const snap = await getDocs(query(projectsCol, orderBy('created_at', 'desc')));
@@ -131,15 +133,57 @@ export const getProjects = async (): Promise<Project[]> => {
   }));
 };
 
+export const getProjectById = async (id: string): Promise<Project | null> => {
+  const ref = doc(db, 'projects', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return {
+    id: snap.id,
+    ...(snap.data() as Omit<Project, 'id'>),
+  };
+};
+
+// --- SUSCRIPCIÓN EN TIEMPO REAL ---
+
+export const subscribeToProjects = (
+  callback: (projects: Project[]) => void,
+): () => void => {
+  const q = query(projectsCol, orderBy('created_at', 'desc'));
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data: Project[] = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<Project, 'id'>),
+    }));
+    callback(data);
+  });
+
+  return unsubscribe;
+};
+
 export const createProject = async (
   project: Omit<Project, 'id' | 'created_at'>,
 ): Promise<void> => {
   const payload: Omit<Project, 'id'> = {
+    // defaults básicos para no romper nada
+    cerrado: false,
+    estado_temporal: 'futuro',
+    presupuesto_total: 0,
     ...project,
     created_at: new Date().toISOString(),
   };
   await addDoc(projectsCol, payload);
 };
+
+export const updateProject = async (
+  project: Project,
+): Promise<void> => {
+  if (!project.id) throw new Error('updateProject: falta id');
+  const { id, ...rest } = project;
+  await updateDoc(doc(db, 'projects', id), rest as any);
+};
+
+// ===================== GASTOS DE PROYECTO/VIAJE =====================
 
 export const getProjectExpenses = async (
   projectId: string,
@@ -156,10 +200,39 @@ export const getProjectExpenses = async (
   }));
 };
 
+export const subscribeToProjectExpenses = (
+  projectId: string,
+  callback: (expenses: ProjectExpense[]) => void,
+): () => void => {
+  const q = query(
+    projectExpensesCol,
+    where('proyecto_id', '==', projectId),
+    orderBy('fecha', 'desc'),
+  );
+
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data: ProjectExpense[] = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<ProjectExpense, 'id'>),
+    }));
+    callback(data);
+  });
+
+  return unsubscribe;
+};
+
+// OJO: aquí esperamos que ya venga normalizado
+// (monto_en_moneda_principal / monto_en_moneda_proyecto / tipo_cambio_usado)
+// La lógica de conversión la haremos en la capa de UI cuando creemos el gasto.
 export const addProjectExpense = async (
-  expense: Omit<ProjectExpense, 'id'>,
+  expense: Omit<ProjectExpense, 'id' | 'created_at'>,
 ): Promise<void> => {
-  await addDoc(projectExpensesCol, expense);
+  const payload: Omit<ProjectExpense, 'id'> = {
+    estado: 'activo',
+    ...expense,
+    created_at: new Date().toISOString(),
+  };
+  await addDoc(projectExpensesCol, payload);
 };
 
 export const updateProjectExpense = async (
