@@ -1,330 +1,350 @@
+// src/pages/Trips.tsx
+
 import React, { useEffect, useState } from 'react';
-import { Plane, MapPin, Plus } from 'lucide-react';
-import { Card, Button, Input, Select } from '../components/Components';
+import { Plane, MapPin, Users, Moon, Hash } from 'lucide-react';
+import { Card, Button, Input, Select, cn } from '../components/Components';
 import { Project, ProjectType, CurrencyType } from '../types';
 import { getProjects, createProject } from '../services/db';
 
-// Opciones fijas de moneda para el desplegable
-const CURRENCY_OPTIONS = [
-  { value: '',      label: 'Selecciona moneda…' },
-  { value: 'EUR',   label: 'EUR (Euro)' },
-  { value: 'USD',   label: 'USD (Dólar USA)' },
-  { value: 'ARS',   label: 'ARS (Peso argentino)' },
-  { value: 'CLP',   label: 'CLP (Peso chileno)' },
-  { value: 'JPY',   label: 'JPY (Yen japonés)' },
-  { value: 'LKR',   label: 'LKR (Rupia de Sri Lanka)' },
-  { value: 'KRW',   label: 'KRW (Won de Corea)' },
-  { value: 'THB',   label: 'THB (Baht de Tailandia)' },
-  { value: 'IDR',   label: 'IDR (Rupia indonesia)' },
-  { value: 'BRL',   label: 'BRL (Real brasileño)' },
-  { value: 'OTHER', label: 'OTRO (escribir moneda)' },
+// Opciones de moneda base del viaje
+const currencyOptions = [
+  { value: 'EUR', label: 'EUR (€)' },
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'ARS', label: 'ARS (Peso argentino)' },
+  { value: 'BRL', label: 'BRL (Real brasileño)' },
+  { value: 'MXN', label: 'MXN (Peso mexicano)' },
+  { value: 'CLP', label: 'CLP (Peso chileno)' },
+  { value: 'THB', label: 'THB (Baht tailandés)' },
+  { value: 'IDR', label: 'IDR (Rupia indonesia)' },
+  { value: 'KRW', label: 'KRW (Won coreano)' },
+  { value: 'LKR', label: 'LKR (Rupia de Sri Lanka)' },
+  { value: 'JPY', label: 'JPY (Yen japonés)' },
+  { value: 'OTRO', label: 'Otro…' },
 ];
+
+const estadoLabel = (p: Project) => {
+  const estado = p.estado_temporal || 'en_curso';
+  if (estado === 'planeado') return 'PRÓXIMO';
+  if (estado === 'pasado') return 'PASADO';
+  return 'EN CURSO';
+};
+
+const estadoColor = (p: Project) => {
+  const estado = p.estado_temporal || 'en_curso';
+  if (estado === 'planeado') return 'bg-blue-100 text-blue-700';
+  if (estado === 'pasado') return 'bg-slate-100 text-slate-600';
+  return 'bg-green-100 text-green-700';
+};
 
 export const Trips: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Formulario creación de viaje
+  // Formulario de creación
   const [nombre, setNombre] = useState('');
-  const [monedaPrincipal, setMonedaPrincipal] = useState<CurrencyType>('');
-  const [monedaCustom, setMonedaCustom] = useState(''); // para "OTRO"
-  const [presupuesto, setPresupuesto] = useState('');
-
-  const [tipoCambio, setTipoCambio] = useState(''); // 1 EUR = X moneda viaje
-  const [numeroPersonas, setNumeroPersonas] = useState('');
-  const [nochesHotel, setNochesHotel] = useState('');
+  const [destino, setDestino] = useState('');
+  const [monedaPrincipal, setMonedaPrincipal] = useState<string>('EUR');
+  const [monedaOtro, setMonedaOtro] = useState<string>('');
+  const [tipoCambioRef, setTipoCambioRef] = useState<string>('');
+  const [personas, setPersonas] = useState<string>('2');
+  const [nochesHotel, setNochesHotel] = useState<string>('');
+  const [nochesFuera, setNochesFuera] = useState<string>('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProjects();
+    const load = async () => {
+      try {
+        const data = await getProjects();
+        setProjects(data);
+      } catch (err) {
+        console.error('Error cargando proyectos:', err);
+      }
+    };
+    load();
   }, []);
 
-  const loadProjects = async () => {
-    const data = await getProjects();
-    setProjects(data);
+  const resolveCurrency = (): CurrencyType => {
+    if (monedaPrincipal === 'OTRO') {
+      const code = monedaOtro.trim().toUpperCase();
+      return code || 'OTRO';
+    }
+    return monedaPrincipal;
   };
 
-  const parseNumber = (value: string): number => {
-    if (!value) return 0;
-    const clean = value.replace(/\./g, '').replace(',', '.');
-    const n = Number(clean);
-    return isNaN(n) ? 0 : n;
-  };
-
-  const handleCreateTrip = async (e: React.FormEvent) => {
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim()) return;
-    if (!monedaPrincipal) return;
 
-    // Si es OTRO, usamos la custom como moneda real
-    const effectiveCurrency =
-      monedaPrincipal === 'OTHER'
-        ? (monedaCustom.trim().toUpperCase() as CurrencyType)
-        : (monedaPrincipal as string as CurrencyType);
+    const nombreOk = nombre.trim().length > 0;
+    const destinoOk = destino.trim().length > 0;
+    const currency = resolveCurrency();
+    const monedaOk = currency.toString().trim().length > 0;
 
-    if (!effectiveCurrency) return;
+    const personasNum = parseInt(personas, 10);
+    const nochesHotelNum = parseInt(nochesHotel, 10);
+    const nochesFueraNum = nochesFuera ? parseInt(nochesFuera, 10) : 0;
+    const tipoCambioNum = parseFloat(tipoCambioRef.replace(',', '.'));
 
-    const numericBudget = parseNumber(presupuesto);
-    const safeBudget = isNaN(numericBudget) ? 0 : numericBudget;
+    if (!nombreOk || !destinoOk || !monedaOk || !personasNum || !nochesHotelNum || !tipoCambioNum) {
+      setFormError('Faltan datos obligatorios por ingresar.');
+      return;
+    }
 
-    const tc = parseNumber(tipoCambio);
-    const personas = parseInt(numeroPersonas || '0', 10);
-    const noches = parseInt(nochesHotel || '0', 10);
-
+    setFormError(null);
     setLoading(true);
+
     try {
-      const payload: Omit<Project, 'id' | 'created_at'> = {
+      await createProject({
         tipo: ProjectType.TRIP,
         nombre: nombre.trim(),
-        moneda_principal: effectiveCurrency,
-        presupuesto_total: safeBudget,
+        destino: destino.trim(),
+        moneda_principal: currency,
+        tipo_cambio_referencia: tipoCambioNum,
+        presupuesto_total: 0,
+        numero_personas: personasNum,
+        noches_hotel: nochesHotelNum,
+        noches_fuera: nochesFueraNum || 0,
         cerrado: false,
-        // nuevos campos
-        tipo_cambio_referencia: tc > 0 ? tc : undefined,
-        numero_personas: personas > 0 ? personas : undefined,
-        noches_hotel: noches > 0 ? noches : undefined,
-      };
-      await createProject(payload);
+        estado_temporal: 'en_curso',
+      });
 
-      // limpiar formulario
+      // Recargar viajes
+      const data = await getProjects();
+      setProjects(data);
+
+      // Limpiar form
       setNombre('');
-      setMonedaPrincipal('');
-      setMonedaCustom('');
-      setPresupuesto('');
-      setTipoCambio('');
-      setNumeroPersonas('');
+      setDestino('');
+      setMonedaPrincipal('EUR');
+      setMonedaOtro('');
+      setTipoCambioRef('');
+      setPersonas('2');
       setNochesHotel('');
-
-      await loadProjects();
+      setNochesFuera('');
+    } catch (err) {
+      console.error(err);
+      setFormError('Ocurrió un error al guardar el viaje.');
     } finally {
       setLoading(false);
     }
   };
 
-  const isOtherCurrency = monedaPrincipal === 'OTHER';
+  const renderCurrencyField = () => {
+    const options = currencyOptions.map((opt) => ({
+      value: opt.value,
+      label: opt.label,
+    }));
 
-  const isSubmitDisabled =
-    loading ||
-    !nombre.trim() ||
-    !monedaPrincipal ||
-    (isOtherCurrency && !monedaCustom.trim());
+    return (
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-slate-600">
+          Moneda del viaje *
+        </label>
+        <Select
+          value={monedaPrincipal}
+          onChange={(e) => setMonedaPrincipal(e.target.value)}
+          options={options}
+        />
+        {monedaPrincipal === 'OTRO' && (
+          <Input
+            className="mt-2"
+            placeholder="Código o símbolo (ej: MEX, COP, ฿)"
+            value={monedaOtro}
+            onChange={(e) => setMonedaOtro(e.target.value)}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 space-y-5 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Plane size={22} className="text-blue-600" />
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Viajes</h1>
-            <p className="text-xs text-slate-400">
-              Crea viajes para seguir tus gastos por separado.
-            </p>
-          </div>
+      <div className="flex items-center justify-between mb-1">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <Plane size={22} className="text-blue-600" />
+            Viajes
+          </h1>
+          <p className="text-xs text-slate-400">
+            Crea un viaje para seguir gastos separados de la vida diaria.
+          </p>
         </div>
       </div>
 
-      {/* Formulario de nuevo viaje */}
-      <Card className="p-4 space-y-3 border border-slate-100">
+      {/* Card de creación de viaje */}
+      <Card className="p-4 space-y-3">
         <h2 className="text-sm font-semibold text-slate-700 mb-1">
           Nuevo viaje
         </h2>
-        <form className="space-y-3" onSubmit={handleCreateTrip}>
-          {/* Nombre */}
-          <div className="space-y-1">
-            <label
-              htmlFor="trip-name"
-              className="text-xs font-medium text-slate-500"
-            >
-              Nombre del viaje
-            </label>
-            <Input
-              id="trip-name"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: México 2025 – Cancún"
-            />
+
+        <form onSubmit={handleCreateProject} className="space-y-3">
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                <Hash size={12} />
+                Nombre del viaje *
+              </label>
+              <Input
+                placeholder="Ej: México 2025"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                <MapPin size={12} />
+                Destino principal *
+              </label>
+              <Input
+                placeholder="Ej: Cancún"
+                value={destino}
+                onChange={(e) => setDestino(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Moneda + presupuesto */}
+          {renderCurrencyField()}
+
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label
-                htmlFor="trip-currency"
-                className="text-xs font-medium text-slate-500"
-              >
-                Moneda principal
+            <div>
+              <label className="text-xs font-semibold text-slate-600">
+                Tipo de cambio ref. *
               </label>
-              <Select
-                id="trip-currency"
-                value={monedaPrincipal}
-                onChange={(e) => setMonedaPrincipal(e.target.value)}
-                options={CURRENCY_OPTIONS}
+              <Input
+                placeholder="Ej: 20 (1 EUR ≈ 20 MXN)"
+                inputMode="decimal"
+                value={tipoCambioRef}
+                onChange={(e) => setTipoCambioRef(e.target.value)}
               />
             </div>
 
-            <div className="space-y-1">
-              <label
-                htmlFor="trip-budget"
-                className="text-xs font-medium text-slate-500"
-              >
-                Presupuesto (opcional)
+            <div>
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                <Users size={12} />
+                Personas *
               </label>
               <Input
-                id="trip-budget"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={presupuesto}
-                onChange={(e) => setPresupuesto(e.target.value)}
+                placeholder="2"
+                inputMode="numeric"
+                value={personas}
+                onChange={(e) => setPersonas(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Moneda custom cuando eliges OTRO */}
-          {isOtherCurrency && (
-            <div className="space-y-1">
-              <label
-                htmlFor="custom-currency"
-                className="text-xs font-medium text-slate-500"
-              >
-                Especifica la moneda (código o símbolo)
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                <Moon size={12} />
+                Noches de hotel *
               </label>
               <Input
-                id="custom-currency"
-                placeholder="Ej: MXN, COP, ₱…"
-                value={monedaCustom}
-                onChange={(e) => setMonedaCustom(e.target.value)}
-              />
-            </div>
-          )}
-
-          {/* Tipo de cambio / personas / noches */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <label
-                htmlFor="trip-rate"
-                className="text-xs font-medium text-slate-500"
-              >
-                Tipo de cambio ref.
-              </label>
-              <Input
-                id="trip-rate"
-                inputMode="decimal"
-                placeholder="Ej: 20,00"
-                value={tipoCambio}
-                onChange={(e) => setTipoCambio(e.target.value)}
-              />
-              <p className="text-[10px] text-slate-400 mt-0.5">
-                1 EUR = X moneda del viaje
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="trip-people"
-                className="text-xs font-medium text-slate-500"
-              >
-                Nº personas
-              </label>
-              <Input
-                id="trip-people"
+                placeholder="Ej: 5"
                 inputMode="numeric"
-                placeholder="2"
-                value={numeroPersonas}
-                onChange={(e) => setNumeroPersonas(e.target.value.replace(/\D/g, ''))}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label
-                htmlFor="trip-nights"
-                className="text-xs font-medium text-slate-500"
-              >
-                Nº noches hotel
-              </label>
-              <Input
-                id="trip-nights"
-                inputMode="numeric"
-                placeholder="5"
                 value={nochesHotel}
-                onChange={(e) => setNochesHotel(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setNochesHotel(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                <Moon size={12} />
+                Noches fuera de Madrid
+              </label>
+              <Input
+                placeholder="Ej: 7"
+                inputMode="numeric"
+                value={nochesFuera}
+                onChange={(e) => setNochesFuera(e.target.value)}
               />
             </div>
           </div>
 
           <Button
             type="submit"
-            disabled={isSubmitDisabled}
-            className="w-full flex items-center justify-center gap-2 mt-1"
+            disabled={loading}
+            className="w-full mt-1"
           >
-            <Plus size={16} />
-            {loading ? 'Creando viaje…' : 'Crear viaje'}
+            {loading ? 'Guardando…' : 'Crear viaje'}
           </Button>
+
+          {formError && (
+            <p className="text-xs text-red-500 mt-1">
+              {formError}
+            </p>
+          )}
         </form>
       </Card>
 
-      {/* Lista de viajes (visión simple por ahora) */}
+      {/* Lista de viajes (modo “wallet” simple por ahora) */}
       <div className="space-y-2">
         <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
           Tus viajes
         </h2>
 
         {projects.length === 0 && (
-          <Card className="p-4 text-sm text-slate-400 text-center">
+          <p className="text-xs text-slate-400 ml-1">
             Aún no tienes viajes creados.
-          </Card>
+          </p>
         )}
 
-        {projects.map((p) => (
-          <Card
-            key={p.id}
-            className="p-3 flex items-center justify-between border border-slate-100"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                <MapPin size={18} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-800 truncate max-w-[180px]">
-                  {p.nombre}
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Moneda: {p.moneda_principal ?? '—'}
-                </p>
-                {(p.numero_personas || p.noches_hotel) && (
-                  <p className="text-[10px] text-slate-400">
-                    {p.numero_personas
-                      ? `${p.numero_personas} persona${p.numero_personas > 1 ? 's' : ''}`
-                      : ''}
-                    {p.numero_personas && p.noches_hotel ? ' · ' : ''}
-                    {p.noches_hotel
-                      ? `${p.noches_hotel} noche${p.noches_hotel > 1 ? 's' : ''}`
-                      : ''}
-                  </p>
+        <div className="space-y-3">
+          {projects.map((p, idx) => {
+            const isTop = idx === 0;
+            return (
+              <Card
+                key={p.id || `${p.nombre}-${idx}`}
+                className={cn(
+                  'p-3 relative transition-all',
+                  !isTop && 'scale-[0.97] translate-y-[-4px] opacity-90',
                 )}
-              </div>
-            </div>
-            <div className="text-right">
-              {p.presupuesto_total > 0 && (
-                <p className="text-xs text-slate-500">
-                  Presupuesto:{' '}
-                  <span className="font-semibold">
-                    {p.moneda_principal}{' '}
-                    {p.presupuesto_total.toLocaleString('es-ES')}
-                  </span>
-                </p>
-              )}
-              {p.tipo_cambio_referencia && (
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  1 EUR ≈ {p.tipo_cambio_referencia.toLocaleString('es-ES')}{' '}
-                  {p.moneda_principal}
-                </p>
-              )}
-              <p className="text-[10px] uppercase text-slate-400 mt-1">
-                {p.cerrado ? 'Finalizado' : 'En curso / Borrador'}
-              </p>
-            </div>
-          </Card>
-        ))}
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold uppercase text-slate-500">
+                        {p.destino || 'DESTINO'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {p.nombre}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1">
+                        <Users size={11} />
+                        {p.numero_personas || 1} pers.
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Moon size={11} />
+                        {p.noches_hotel || 0} noches hotel
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={cn(
+                        'px-2 py-0.5 rounded-full text-[10px] font-semibold',
+                        estadoColor(p),
+                      )}
+                    >
+                      {estadoLabel(p)}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Moneda: {p.moneda_principal}
+                    </span>
+                    {p.tipo_cambio_referencia && (
+                      <span className="text-[10px] text-slate-400">
+                        TC ref: {p.tipo_cambio_referencia}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
