@@ -35,6 +35,7 @@ import {
   Currency,
   CurrencyType,
 } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 // =================== HELPERS ===================
 
@@ -108,6 +109,8 @@ export const Trips: React.FC = () => {
 
   // Ref para hacer scroll al formulario
   const formRef = useRef<HTMLDivElement | null>(null);
+
+  const navigate = useNavigate();
 
   // =================== CARGA INICIAL ===================
 
@@ -239,7 +242,8 @@ export const Trips: React.FC = () => {
     }
   };
 
-  const handleEditClick = (p: Project) => {
+  const handleEditClick = (p: Project, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!p) return;
     setEditingProjectId(p.id || null);
     setNombreViaje(p.nombre || '');
@@ -281,7 +285,8 @@ export const Trips: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = async (p: Project) => {
+  const handleDeleteClick = async (p: Project, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!p.id) return;
     const ok = window.confirm(
       `¿Seguro que quieres borrar el viaje "${p.nombre}"? Esta acción no se puede deshacer.`,
@@ -307,6 +312,11 @@ export const Trips: React.FC = () => {
   };
 
   const isExpanded = editingProjectId !== null || isCreateOpen;
+
+  const handleOpenTrip = (p: Project) => {
+    if (!p.id) return;
+    navigate(`/trips/${p.id}`);
+  };
 
   // =================== RENDER ===================
 
@@ -353,8 +363,9 @@ export const Trips: React.FC = () => {
             return (
               <Card
                 key={p.id}
+                onClick={() => handleOpenTrip(p)}
                 className={cn(
-                  'p-4 border border-slate-100 shadow-sm flex flex-col gap-2',
+                  'p-4 border border-slate-100 shadow-sm flex flex-col gap-2 active:scale-[0.99] transition-transform',
                 )}
               >
                 <div className="flex items-center justify-between">
@@ -382,9 +393,12 @@ export const Trips: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-1">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
                       {estadoLabel}
+                    </span>
+                    <span className="text-[10px] text-blue-500 underline">
+                      Abrir viaje
                     </span>
                   </div>
                 </div>
@@ -430,7 +444,7 @@ export const Trips: React.FC = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handleEditClick(p)}
+                    onClick={(e) => handleEditClick(p, e)}
                     className="flex items-center gap-1"
                   >
                     <Pencil size={14} />
@@ -440,7 +454,7 @@ export const Trips: React.FC = () => {
                     type="button"
                     variant="danger"
                     size="icon"
-                    onClick={() => handleDeleteClick(p)}
+                    onClick={(e) => handleDeleteClick(p, e)}
                     aria-label="Borrar viaje"
                   >
                     <Trash2 size={16} />
@@ -493,7 +507,10 @@ export const Trips: React.FC = () => {
               // En edición NO colapsamos, en vez de chevron mostramos Cancelar
               <button
                 type="button"
-                onClick={resetForm}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetForm();
+                }}
                 className="text-[11px] font-medium text-amber-700 underline flex-shrink-0"
               >
                 Cancelar
