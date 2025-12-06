@@ -1,232 +1,198 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Plane } from 'lucide-react';
-import { Card, Button, Input } from '../components/Components';
+import { Plane, MapPin, Plus } from 'lucide-react';
+import { Card, Button, Input, Select } from '../components/Components';
 import { Project, ProjectType, CurrencyType } from '../types';
 import { getProjects, createProject } from '../services/db';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+
+// Opciones fijas de moneda para el desplegable
+const CURRENCY_OPTIONS = [
+  { value: '',    label: 'Selecciona moneda…' },
+  { value: 'EUR', label: 'EUR (Euro)' },
+  { value: 'USD', label: 'USD (Dólar USA)' },
+  { value: 'ARS', label: 'ARS (Peso argentino)' },
+  { value: 'CLP', label: 'CLP (Peso chileno)' },
+  { value: 'JPY', label: 'JPY (Yen japonés)' },
+  { value: 'LKR', label: 'LKR (Rupia de Sri Lanka)' },
+  { value: 'KRW', label: 'KRW (Won de Corea)' },
+  { value: 'THB', label: 'THB (Baht de Tailandia)' },
+  { value: 'IDR', label: 'IDR (Rupia indonesia)' },
+  { value: 'BRL', label: 'BRL (Real brasileño)' },
+];
 
 export const Trips: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Formulario “nuevo viaje”
-  const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState('');
-  // 👇 ahora es string libre (CurrencyType), no solo el enum fijo
-  const [currency, setCurrency] = useState<CurrencyType>('EUR');
-  const [budget, setBudget] = useState<string>('');
+  // Formulario básico de creación de viaje
+  const [nombre, setNombre] = useState('');
+  const [monedaPrincipal, setMonedaPrincipal] = useState<CurrencyType>('');
+  const [presupuesto, setPresupuesto] = useState('');
 
-  const currentUser = localStorage.getItem('currentUser') || 'Usuario';
-
-  // Cargar viajes existentes
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getProjects();
-        // Por ahora: solo viajes
-        setProjects(data.filter((p) => p.tipo === ProjectType.TRIP));
-      } catch (err) {
-        console.error('Error cargando proyectos:', err);
-      }
-    };
-    load();
+    loadProjects();
   }, []);
 
-  const resetForm = () => {
-    setName('');
-    setCurrency('EUR');
-    setBudget('');
-  };
-
-  const handleNewTripClick = () => {
-    setShowForm((prev) => !prev);
+  const loadProjects = async () => {
+    const data = await getProjects();
+    setProjects(data);
   };
 
   const handleCreateTrip = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert('Ponle un nombre al viaje (ej: México 2025)');
-      return;
-    }
+    if (!nombre.trim()) return;
+    if (!monedaPrincipal) return;
 
     const numericBudget = Number(
-      budget.replace(/\./g, '').replace(',', '.'),
+      presupuesto.replace(/\./g, '').replace(',', '.'),
     );
-    const finalBudget = isNaN(numericBudget) ? 0 : numericBudget;
+    const safeBudget = isNaN(numericBudget) ? 0 : numericBudget;
 
+    setLoading(true);
     try {
-      setLoading(true);
-      await createProject({
+      const payload: Omit<Project, 'id' | 'created_at'> = {
         tipo: ProjectType.TRIP,
-        nombre: name.trim(),
-        // 👇 guardamos tal cual lo escribas (MXN, THB, COP, etc.)
-        moneda_principal: currency || 'EUR',
-        presupuesto_total: finalBudget,
+        nombre: nombre.trim(),
+        moneda_principal: (monedaPrincipal as string).toUpperCase(),
+        presupuesto_total: safeBudget,
         cerrado: false,
-      });
-
-      // Recargar lista
-      const data = await getProjects();
-      setProjects(data.filter((p) => p.tipo === ProjectType.TRIP));
-
-      resetForm();
-      setShowForm(false);
-    } catch (err) {
-      console.error('Error creando viaje:', err);
-      alert('Hubo un problema creando el viaje');
+      };
+      await createProject(payload);
+      setNombre('');
+      setMonedaPrincipal('');
+      setPresupuesto('');
+      await loadProjects();
     } finally {
       setLoading(false);
     }
   };
 
-  const formatMoneyNoDecimals = (value: number) => {
-    const n = Number(value) || 0;
-    const int = Math.round(n);
-    return int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  };
-
   return (
-    <div className="p-4 space-y-4 pb-24">
+    <div className="p-4 space-y-5 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Viajes</h1>
-          <p className="text-xs text-slate-400">
-            Módulo básico de viajes — {currentUser}
-          </p>
+        <div className="flex items-center gap-2">
+          <Plane size={22} className="text-blue-600" />
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Viajes</h1>
+            <p className="text-xs text-slate-400">
+              Crea viajes para seguir tus gastos por separado.
+            </p>
+          </div>
         </div>
-        <Button
-          size="sm"
-          onClick={handleNewTripClick}
-          className="flex items-center gap-1"
-        >
-          <Plus size={14} />
-          <span className="text-xs font-semibold">
-            {showForm ? 'Cancelar' : 'Nuevo viaje'}
-          </span>
-        </Button>
       </div>
 
-      {/* Formulario simple de creación de viaje */}
-      {showForm && (
-        <Card className="p-4 space-y-3 border-blue-100 bg-blue-50/40">
-          <h2 className="text-sm font-bold text-slate-700 mb-1">
-            Crear nuevo viaje
-          </h2>
-          <form className="space-y-3" onSubmit={handleCreateTrip}>
+      {/* Formulario de nuevo viaje */}
+      <Card className="p-4 space-y-3 border border-slate-100">
+        <h2 className="text-sm font-semibold text-slate-700 mb-1">
+          Nuevo viaje
+        </h2>
+        <form className="space-y-3" onSubmit={handleCreateTrip}>
+          <div className="space-y-1">
+            <label
+              htmlFor="trip-name"
+              className="text-xs font-medium text-slate-500"
+            >
+              Nombre del viaje
+            </label>
+            <Input
+              id="trip-name"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej: México 2025 – Cancún"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-slate-600">
-                Nombre del viaje
+              <label
+                htmlFor="trip-currency"
+                className="text-xs font-medium text-slate-500"
+              >
+                Moneda principal
               </label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: México 2025 – Cancún"
-                className="bg-white"
+              {/* AQUÍ VA AHORA EL DESPLEGABLE REAL */}
+              <Select
+                id="trip-currency"
+                value={monedaPrincipal}
+                onChange={(e) => setMonedaPrincipal(e.target.value)}
+                options={CURRENCY_OPTIONS}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-600">
-                  Moneda principal
-                </label>
-                {/* 👇 campo libre con sugerencias */}
-                <div>
-                  <Input
-                    value={currency}
-                    onChange={(e) =>
-                      setCurrency(e.target.value.toUpperCase())
-                    }
-                    placeholder="Ej: EUR, MXN, THB..."
-                    className="bg-white uppercase"
-                    list="currency-suggestions"
-                  />
-                  <datalist id="currency-suggestions">
-                    <option value="EUR" />
-                    <option value="USD" />
-                    <option value="ARS" />
-                    <option value="BRL" />
-                    <option value="MXN" />
-                    <option value="THB" />
-                  </datalist>
-                </div>
-              </div>
+            <div className="space-y-1">
+              <label
+                htmlFor="trip-budget"
+                className="text-xs font-medium text-slate-500"
+              >
+                Presupuesto (opcional)
+              </label>
+              <Input
+                id="trip-budget"
+                inputMode="decimal"
+                placeholder="0,00"
+                value={presupuesto}
+                onChange={(e) => setPresupuesto(e.target.value)}
+              />
+            </div>
+          </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-600">
-                  Presupuesto total (opcional)
-                </label>
-                <Input
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="0"
-                  className="bg-white"
-                  inputMode="decimal"
-                />
+          <Button
+            type="submit"
+            disabled={loading || !nombre.trim() || !monedaPrincipal}
+            className="w-full flex items-center justify-center gap-2 mt-1"
+          >
+            <Plus size={16} />
+            {loading ? 'Creando viaje…' : 'Crear viaje'}
+          </Button>
+        </form>
+      </Card>
+
+      {/* Lista de viajes (modo simple aún) */}
+      <div className="space-y-2">
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">
+          Tus viajes
+        </h2>
+
+        {projects.length === 0 && (
+          <Card className="p-4 text-sm text-slate-400 text-center">
+            Aún no tienes viajes creados.
+          </Card>
+        )}
+
+        {projects.map((p) => (
+          <Card
+            key={p.id}
+            className="p-3 flex items-center justify-between border border-slate-100"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                <MapPin size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-800 truncate max-w-[180px]">
+                  {p.nombre}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Moneda: {p.moneda_principal ?? '—'}
+                </p>
               </div>
             </div>
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Creando viaje...' : 'Crear viaje'}
-            </Button>
-          </form>
-        </Card>
-      )}
-
-      {/* Lista de viajes */}
-      {projects.length === 0 && !showForm && (
-        <Card className="p-4 flex flex-col items-center text-center gap-2 border-dashed border-slate-200">
-          <Plane size={28} className="text-blue-500" />
-          <p className="text-sm text-slate-600 font-medium">
-            Aún no tienes viajes creados.
-          </p>
-          <p className="text-xs text-slate-400">
-            Usa el botón <strong>“Nuevo viaje”</strong> para registrar tu próximo viaje.
-          </p>
-        </Card>
-      )}
-
-      {projects.length > 0 && (
-        <div className="space-y-2">
-          {projects.map((p) => {
-            const createdLabel = p.created_at
-              ? format(new Date(p.created_at), 'dd MMM yyyy', { locale: es })
-              : 'Sin fecha';
-
-            return (
-              <Card
-                key={p.id}
-                className="p-4 flex items-center justify-between hover:bg-slate-50 cursor-default"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
-                    <Plane size={18} aria-hidden="true" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">
-                      {p.nombre}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      Creado: {createdLabel}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-slate-500 uppercase">
-                    Presupuesto
-                  </p>
-                  <p className="text-sm font-bold text-slate-900">
-                    {formatMoneyNoDecimals(p.presupuesto_total || 0)}{' '}
-                    {p.moneda_principal}
-                  </p>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+            <div className="text-right">
+              {p.presupuesto_total > 0 && (
+                <p className="text-xs text-slate-500">
+                  Presupuesto:{' '}
+                  <span className="font-semibold">
+                    {p.moneda_principal} {p.presupuesto_total.toLocaleString('es-ES')}
+                  </span>
+                </p>
+              )}
+              <p className="text-[10px] uppercase text-slate-400 mt-1">
+                {p.cerrado ? 'Finalizado' : 'En curso / Borrador'}
+              </p>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
