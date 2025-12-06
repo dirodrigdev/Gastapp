@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Plane,
   MapPin,
@@ -101,6 +101,9 @@ export const Trips: React.FC = () => {
   const [tipoCambio, setTipoCambio] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Ref para hacer scroll al formulario (que ahora está ABAJO)
+  const formRef = useRef<HTMLDivElement | null>(null);
+
   // =================== CARGA INICIAL ===================
 
   const loadProjects = async () => {
@@ -197,7 +200,6 @@ export const Trips: React.FC = () => {
           personas: personasValue,
           noches_totales: nochesValue,
           tipo_cambio_referencia: tipoCambioValue,
-          // cerrado y estado_temporal quedan como estén
         };
 
         await updateProject(updated);
@@ -263,8 +265,10 @@ export const Trips: React.FC = () => {
       setMonedaCustom('');
     }
 
-    // Subir un poco la página para que vea el formulario
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll al formulario (que ahora está ABAJO)
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleDeleteClick = async (p: Project) => {
@@ -301,178 +305,6 @@ export const Trips: React.FC = () => {
         <RefreshButton />
       </div>
 
-      {/* Card de creación / edición */}
-      <Card className="p-4 bg-white border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="h-8 w-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-            <Plane size={18} />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">
-              {editingProjectId ? 'Editar viaje' : 'Crear nuevo viaje'}
-            </h2>
-            <p className="text-[11px] text-slate-400">
-              {editingProjectId
-                ? 'Modifica los datos básicos del viaje.'
-                : 'Define lo básico y después iremos sumando gastos.'}
-            </p>
-          </div>
-        </div>
-
-        {editingProjectId && (
-          <div className="mb-2 flex items-center justify-between text-[11px]">
-            <span className="text-slate-500">
-              Editando viaje existente
-            </span>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="text-blue-600 font-medium"
-            >
-              Cancelar edición
-            </button>
-          </div>
-        )}
-
-        <form onSubmit={handleCreateOrUpdateProject} className="space-y-3">
-          {/* Nombre + destino */}
-          <div className="grid grid-cols-1 gap-2">
-            <div>
-              <label className="text-[11px] font-medium text-slate-500">
-                Nombre del viaje *
-              </label>
-              <Input
-                value={nombreViaje}
-                onChange={(e) => setNombreViaje(e.target.value)}
-                placeholder="Ej: México 2025"
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                Destino principal
-                <MapPin size={10} className="text-slate-400" />
-              </label>
-              <Input
-                value={destinoPrincipal}
-                onChange={(e) => setDestinoPrincipal(e.target.value)}
-                placeholder="Ej: Cancún"
-                className="mt-1 text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Moneda viaje + tipo cambio */}
-          <div className="grid grid-cols-1 gap-2">
-            <div>
-              <label className="text-[11px] font-medium text-slate-500">
-                Moneda del viaje *
-              </label>
-              <Select
-                value={selectedCurrency}
-                onChange={(e) => setSelectedCurrency(e.target.value)}
-                className="mt-1 text-sm"
-                options={currencyOptions}
-              />
-              {selectedCurrency === 'OTRA' && (
-                <Input
-                  className="mt-2 text-sm"
-                  placeholder="Ej: MEX$, SGD, etc."
-                  value={monedaCustom}
-                  onChange={(e) => setMonedaCustom(e.target.value)}
-                />
-              )}
-            </div>
-
-            <div>
-              <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                Tipo de cambio de referencia
-                <span className="text-[10px] text-slate-400">
-                  (1 EUR = ¿cuánta moneda del viaje?)
-                </span>
-              </label>
-              <Input
-                value={tipoCambio}
-                onChange={(e) => setTipoCambio(e.target.value)}
-                inputMode="decimal"
-                placeholder="Ej: 20,00"
-                className="mt-1 text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Presupuesto + personas + noches */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-2">
-              <label className="text-[11px] font-medium text-slate-500">
-                Presupuesto total (EUR)
-              </label>
-              <div className="relative mt-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                  €
-                </span>
-                <Input
-                  value={presupuesto}
-                  onChange={(e) => setPresupuesto(e.target.value)}
-                  inputMode="decimal"
-                  placeholder="Opcional"
-                  className="pl-6 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                Personas
-                <Users size={10} className="text-slate-400" />
-              </label>
-              <Input
-                value={personas}
-                onChange={(e) => setPersonas(e.target.value)}
-                inputMode="numeric"
-                className="mt-1 text-sm text-center"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                Noches de hotel
-                <Moon size={10} className="text-slate-400" />
-              </label>
-              <Input
-                value={noches}
-                onChange={(e) => setNoches(e.target.value)}
-                inputMode="numeric"
-                className="mt-1 text-sm text-center"
-              />
-            </div>
-          </div>
-
-          {/* Error form */}
-          {formError && (
-            <div className="flex items-center gap-1 text-[11px] text-red-500 mt-1">
-              <AlertCircle size={12} />
-              <span>{formError}</span>
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            disabled={creating}
-            className="w-full mt-2"
-          >
-            {creating
-              ? editingProjectId
-                ? 'Guardando cambios…'
-                : 'Guardando viaje…'
-              : editingProjectId
-              ? 'Guardar cambios'
-              : 'Crear viaje'}
-          </Button>
-        </form>
-      </Card>
-
       {/* Lista de viajes / wallet básica */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-1">
@@ -490,7 +322,7 @@ export const Trips: React.FC = () => {
 
         {!loading && projects.length === 0 && (
           <Card className="p-4 text-sm text-slate-400">
-            Todavía no tienes viajes creados. Empieza arriba con tu próximo viaje.
+            Todavía no tienes viajes creados. Usa el formulario de abajo para crear el primero.
           </Card>
         )}
 
@@ -599,6 +431,186 @@ export const Trips: React.FC = () => {
               </Card>
             );
           })}
+      </div>
+
+      {/* Card de creación / edición (ABAJO) */}
+      <div ref={formRef}>
+        <Card
+          className={cn(
+            'p-4 border shadow-sm mt-4',
+            editingProjectId
+              ? 'bg-amber-50 border-amber-200'
+              : 'bg-white border-slate-100',
+          )}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              className={cn(
+                'h-8 w-8 rounded-xl flex items-center justify-center',
+                editingProjectId ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-600',
+              )}
+            >
+              <Plane size={18} />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-bold text-slate-800">
+                {editingProjectId ? 'Editar viaje' : 'Crear nuevo viaje'}
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                {editingProjectId
+                  ? 'Modifica los datos básicos del viaje seleccionado.'
+                  : 'Define lo básico y después iremos sumando gastos.'}
+              </p>
+            </div>
+            {editingProjectId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="text-[11px] font-medium text-amber-700 underline"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+
+          <form onSubmit={handleCreateOrUpdateProject} className="space-y-3">
+            {/* Nombre + destino */}
+            <div className="grid grid-cols-1 gap-2">
+              <div>
+                <label className="text-[11px] font-medium text-slate-500">
+                  Nombre del viaje *
+                </label>
+                <Input
+                  value={nombreViaje}
+                  onChange={(e) => setNombreViaje(e.target.value)}
+                  placeholder="Ej: México 2025"
+                  className="mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                  Destino principal
+                  <MapPin size={10} className="text-slate-400" />
+                </label>
+                <Input
+                  value={destinoPrincipal}
+                  onChange={(e) => setDestinoPrincipal(e.target.value)}
+                  placeholder="Ej: Cancún"
+                  className="mt-1 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Moneda viaje + tipo cambio */}
+            <div className="grid grid-cols-1 gap-2">
+              <div>
+                <label className="text-[11px] font-medium text-slate-500">
+                  Moneda del viaje *
+                </label>
+                <Select
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="mt-1 text-sm"
+                  options={currencyOptions}
+                />
+                {selectedCurrency === 'OTRA' && (
+                  <Input
+                    className="mt-2 text-sm"
+                    placeholder="Ej: MEX$, SGD, etc."
+                    value={monedaCustom}
+                    onChange={(e) => setMonedaCustom(e.target.value)}
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                  Tipo de cambio de referencia
+                  <span className="text-[10px] text-slate-400">
+                    (1 EUR = ¿cuánta moneda del viaje?)
+                  </span>
+                </label>
+                <Input
+                  value={tipoCambio}
+                  onChange={(e) => setTipoCambio(e.target.value)}
+                  inputMode="decimal"
+                  placeholder="Ej: 20,00"
+                  className="mt-1 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Presupuesto + personas + noches */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-2">
+                <label className="text-[11px] font-medium text-slate-500">
+                  Presupuesto total (EUR)
+                </label>
+                <div className="relative mt-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                    €
+                  </span>
+                  <Input
+                    value={presupuesto}
+                    onChange={(e) => setPresupuesto(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="Opcional"
+                    className="pl-6 text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                  Personas
+                  <Users size={10} className="text-slate-400" />
+                </label>
+                <Input
+                  value={personas}
+                  onChange={(e) => setPersonas(e.target.value)}
+                  inputMode="numeric"
+                  className="mt-1 text-sm text-center"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                  Noches de hotel
+                  <Moon size={10} className="text-slate-400" />
+                </label>
+                <Input
+                  value={noches}
+                  onChange={(e) => setNoches(e.target.value)}
+                  inputMode="numeric"
+                  className="mt-1 text-sm text-center"
+                />
+              </div>
+            </div>
+
+            {/* Error form */}
+            {formError && (
+              <div className="flex items-center gap-1 text-[11px] text-red-500 mt-1">
+                <AlertCircle size={12} />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={creating}
+              className="w-full mt-2"
+            >
+              {creating
+                ? editingProjectId
+                  ? 'Guardando cambios…'
+                  : 'Guardando viaje…'
+                : editingProjectId
+                ? 'Guardar cambios'
+                : 'Crear viaje'}
+            </Button>
+          </form>
+        </Card>
       </div>
     </div>
   );
