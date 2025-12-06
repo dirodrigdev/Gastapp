@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Plane, Suitcase } from 'lucide-react';
+import { Plus, Plane } from 'lucide-react';
 import { Card, Button } from '../components/Components';
 import { Project, ProjectType } from '../types';
 import { getProjects } from '../services/db';
@@ -74,7 +74,7 @@ export const Trips: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
-                    <Suitcase size={18} />
+                    <Plane size={18} />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-800">
