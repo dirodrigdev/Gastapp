@@ -17,7 +17,7 @@ export enum ProjectType {
   PROJECT = 'proyecto',
 }
 
-// Monedas "base" que tenemos como enum
+// Monedas base
 export enum Currency {
   EUR = 'EUR',
   USD = 'USD',
@@ -33,7 +33,6 @@ export enum Currency {
   LKR = 'LKR',
 }
 
-// Tipo lógico para cualquier moneda: una de las conocidas o un string libre (OTRA)
 export type CurrencyType = Currency | string;
 
 // --- ESTRUCTURAS DINÁMICAS ---
@@ -52,11 +51,11 @@ export interface ClosingConfig {
 }
 
 export interface CategoryReportDetail {
-  categoryId?: string; // Opcional para datos históricos antiguos
+  categoryId?: string;
   categoryName: string;
   presupuesto: number;
   gastoReal: number;
-  diferencia?: number; // Opcional
+  diferencia?: number;
 }
 
 export interface MonthlyReport {
@@ -69,7 +68,7 @@ export interface MonthlyReport {
   fechaFin: string;
   fechaCierre: string;
 
-  estado?: string; // Campo opcional para compatibilidad con datos históricos
+  estado?: string;
 
   detalles: CategoryReportDetail[];
   totalGlobalPresupuesto: number;
@@ -81,7 +80,7 @@ export interface MonthlyReport {
 
 export interface MonthlyExpense {
   id?: string;
-  fecha: string; // ISO string
+  fecha: string;
   monto: number;
   moneda: CurrencyType;
   categoria: string;
@@ -93,52 +92,26 @@ export interface MonthlyExpense {
   created_at?: string;
 }
 
-/**
- * Proyecto / Viaje
- *
- * Para viajes usamos:
- * - tipo: 'viaje'
- * - moneda_principal: normalmente 'EUR'
- * - moneda_proyecto: moneda local del viaje (MXN, THB, etc.)
- */
 export interface Project {
   id?: string;
 
   tipo: ProjectType;
 
-  // Nombre interno del proyecto / viaje (ej: "México 2025")
   nombre: string;
-
-  // Destino principal visible (ej: "Cancún") — opcional
   destino_principal?: string;
 
-  // Moneda "base" (para ti será EUR casi siempre)
   moneda_principal: CurrencyType;
-
-  // Moneda del viaje/proyecto (ej: MXN, THB, etc.)
   moneda_proyecto: CurrencyType;
 
-  // Presupuesto total del proyecto en moneda_principal (EUR)
   presupuesto_total?: number;
 
-  // Personas que viajan
   personas?: number;
-
-  // Noches de hotel (las que usamos para coste medio por noche)
   noches_totales?: number;
-
-  // Opcional: noches fuera de Madrid (info extra)
   noches_fuera_madrid?: number;
 
-  // Tipo de cambio de referencia:
-  // cuántas unidades de moneda_proyecto equivalen a 1 unidad de moneda_principal
-  // (ej: 1 EUR = 20 MXN → tipo_cambio_referencia = 20)
   tipo_cambio_referencia?: number;
 
-  // Marcador contable: cuando lo cierres "de verdad"
   cerrado: boolean;
-
-  // Estado temporal lúdico: futuro / en curso / pasado
   estado_temporal?: 'futuro' | 'en_curso' | 'pasado';
 
   created_at?: string;
@@ -147,7 +120,7 @@ export interface Project {
 export interface ProjectExpense {
   id?: string;
   proyecto_id: string;
-  fecha: string; // ISO
+  fecha: string;
   monto_original: number;
   moneda_original: CurrencyType;
   tipo_cambio_usado: number;
@@ -158,4 +131,5 @@ export interface ProjectExpense {
   imagen_adjunta_url?: string;
   creado_por_usuario_id: User;
   estado: 'activo' | 'borrado';
+  created_at?: string;
 }
