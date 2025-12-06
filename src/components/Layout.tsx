@@ -1,46 +1,79 @@
 import React from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, History, Briefcase, Settings, PieChart } from 'lucide-react';
-import { cn } from '../components/Components'; // Importación corregida
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import {
+  Home as HomeIcon,
+  Clock,
+  Settings as SettingsIcon,
+  Layers,
+  PieChart,
+  Plane,
+} from 'lucide-react';
+import { cn } from './Components';
 
-export const Layout = () => { // EXPORTADO
+export const Layout: React.FC = () => {
   const location = useLocation();
+  const currentUser = localStorage.getItem('currentUser');
+
+  const navItems = [
+    {
+      to: '/',
+      label: 'Inicio',
+      icon: HomeIcon,
+    },
+    {
+      to: '/history',
+      label: 'Historial',
+      icon: Clock,
+    },
+    // 👉 NUEVO: Viajes (visible solo para Diego, por ahora)
+    {
+      to: '/trips',
+      label: 'Viajes',
+      icon: Plane,
+      onlyDiego: true,
+    },
+    {
+      to: '/reports',
+      label: 'Informes',
+      icon: PieChart,
+    },
+    {
+      to: '/settings',
+      label: 'Ajustes',
+      icon: SettingsIcon,
+    },
+  ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 no-scrollbar">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <main className="flex-1 max-w-md mx-auto w-full pb-20">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 pb-safe pt-2 px-2 z-50">
-        <div className="flex justify-around items-end h-16 pb-2">
-          <NavItem to="/" icon={<Home size={22} />} label="Home" />
-          <NavItem to="/history" icon={<History size={22} />} label="Historial" />
-          <NavItem to="/reports" icon={<PieChart size={22} />} label="Informes" />
-          <NavItem to="/settings" icon={<Settings size={22} />} label="Ajustes" />
+      <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur">
+        <div className="max-w-md mx-auto flex justify-between px-4 py-2">
+          {navItems
+            .filter((item) => !item.onlyDiego || currentUser === 'Diego')
+            .map((item) => {
+              const isActive = location.pathname === item.to;
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 flex-1 text-[11px]',
+                    isActive ? 'text-blue-600' : 'text-slate-400',
+                  )}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
         </div>
       </nav>
     </div>
-  );
-};
-
-const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => {
-  return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        cn(
-          "flex flex-col items-center justify-center w-16 gap-1 transition-colors duration-200",
-          isActive ? "text-brand-600" : "text-gray-400 hover:text-gray-600"
-        )
-      }
-    >
-      <div className="relative">
-        {icon}
-      </div>
-      <span className="text-[10px] font-medium tracking-tight">{label}</span>
-    </NavLink>
   );
 };
