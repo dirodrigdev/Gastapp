@@ -52,7 +52,8 @@ export const Layout: React.FC = () => {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur">
+      {/* Subimos la barra un poco para evitar la “rayita” del iPhone */}
+      <nav className="fixed bottom-2 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur">
         <div className="max-w-md mx-auto flex justify-between px-4 py-2">
           {navItems
             .filter((item) => !item.onlyDiego || currentUser === 'Diego')
