@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Plane } from 'lucide-react';
 import { Card, Button, Input } from '../components/Components';
-import { Project, ProjectType, Currency } from '../types';
+import { Project, ProjectType, CurrencyType } from '../types';
 import { getProjects, createProject } from '../services/db';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,7 +13,8 @@ export const Trips: React.FC = () => {
   // Formulario “nuevo viaje”
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
-  const [currency, setCurrency] = useState<Currency>(Currency.EUR);
+  // 👇 ahora es string libre (CurrencyType), no solo el enum fijo
+  const [currency, setCurrency] = useState<CurrencyType>('EUR');
   const [budget, setBudget] = useState<string>('');
 
   const currentUser = localStorage.getItem('currentUser') || 'Usuario';
@@ -34,7 +35,7 @@ export const Trips: React.FC = () => {
 
   const resetForm = () => {
     setName('');
-    setCurrency(Currency.EUR);
+    setCurrency('EUR');
     setBudget('');
   };
 
@@ -59,7 +60,8 @@ export const Trips: React.FC = () => {
       await createProject({
         tipo: ProjectType.TRIP,
         nombre: name.trim(),
-        moneda_principal: currency,
+        // 👇 guardamos tal cual lo escribas (MXN, THB, COP, etc.)
+        moneda_principal: currency || 'EUR',
         presupuesto_total: finalBudget,
         cerrado: false,
       });
@@ -130,16 +132,26 @@ export const Trips: React.FC = () => {
                 <label className="text-xs font-semibold text-slate-600">
                   Moneda principal
                 </label>
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value as Currency)}
-                  className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-                >
-                  <option value={Currency.EUR}>EUR (€)</option>
-                  <option value={Currency.USD}>USD ($)</option>
-                  <option value={Currency.ARS}>ARS ($)</option>
-                  <option value={Currency.BRL}>BRL (R$)</option>
-                </select>
+                {/* 👇 campo libre con sugerencias */}
+                <div>
+                  <Input
+                    value={currency}
+                    onChange={(e) =>
+                      setCurrency(e.target.value.toUpperCase())
+                    }
+                    placeholder="Ej: EUR, MXN, THB..."
+                    className="bg-white uppercase"
+                    list="currency-suggestions"
+                  />
+                  <datalist id="currency-suggestions">
+                    <option value="EUR" />
+                    <option value="USD" />
+                    <option value="ARS" />
+                    <option value="BRL" />
+                    <option value="MXN" />
+                    <option value="THB" />
+                  </datalist>
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -186,7 +198,7 @@ export const Trips: React.FC = () => {
             return (
               <Card
                 key={p.id}
-                className="p-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+                className="p-4 flex items-center justify-between hover:bg-slate-50 cursor-default"
               >
                 <div className="flex items-center gap-3">
                   <div className="bg-blue-50 text-blue-600 p-2 rounded-xl">
