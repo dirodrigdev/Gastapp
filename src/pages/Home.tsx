@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChevronDown, ChevronUp, Calendar as CalendarIcon } from 'lucide-react';
+import {
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Calendar as CalendarIcon,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { format, isSameDay, isBefore, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -10,7 +17,7 @@ import {
   parseLocaleNumber,
   formatLocaleNumber,
   Input,
-  cn
+  cn,
 } from '../components/Components';
 import {
   subscribeToExpenses,
@@ -28,11 +35,13 @@ import { EditExpenseModal } from '../components/EditExpenseModal';
 export const Home = () => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [expenseDate, setExpenseDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [expenseDate, setExpenseDate] = useState(
+    format(new Date(), 'yyyy-MM-dd'),
+  );
 
   // Period Info State
   const [activeStartDate, setActiveStartDate] = useState<Date>(
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   );
   const [activeEndDate, setActiveEndDate] = useState<Date>(new Date());
   const [periodLabel, setPeriodLabel] = useState('');
@@ -44,11 +53,17 @@ export const Home = () => {
   const [selectedCatName, setSelectedCatName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [showBudgetDetails, setShowBudgetDetails] = useState(false);
-  const [currentUser, setCurrentUser] = useState(localStorage.getItem('currentUser') || 'Usuario');
+  const [currentUser, setCurrentUser] = useState(
+    localStorage.getItem('currentUser') || 'Usuario',
+  );
 
   // Edit State
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<MonthlyExpense | null>(null);
+  const [selectedExpense, setSelectedExpense] =
+    useState<MonthlyExpense | null>(null);
+
+  // 👉 Visibilidad de números (ojito)
+  const [showMoney, setShowMoney] = useState(false);
 
   // --- CONEXIÓN EN TIEMPO REAL ---
   useEffect(() => {
@@ -142,12 +157,16 @@ export const Home = () => {
 
   const initData = async () => {
     try {
-      const [config, reports] = await Promise.all([getClosingConfig(), getMonthlyReports()]);
+      const [config, reports] = await Promise.all([
+        getClosingConfig(),
+        getMonthlyReports(),
+      ]);
       const diaCierre = config.diaFijo || 11;
 
       const theoreticalPeriod = calculatePeriodInfo(new Date(), diaCierre);
       const sortedReports = reports.sort(
-        (a, b) => new Date(b.fechaFin).getTime() - new Date(a.fechaFin).getTime(),
+        (a, b) =>
+          new Date(b.fechaFin).getTime() - new Date(a.fechaFin).getTime(),
       );
       const lastReport = sortedReports.length > 0 ? sortedReports[0] : null;
 
@@ -163,9 +182,17 @@ export const Home = () => {
         periodNumber = (lastReport.numeroPeriodo || 0) + 1;
       }
 
-      let nextClosingDate = new Date(realStartDate.getFullYear(), realStartDate.getMonth(), diaCierre);
+      let nextClosingDate = new Date(
+        realStartDate.getFullYear(),
+        realStartDate.getMonth(),
+        diaCierre,
+      );
       if (nextClosingDate.getTime() < realStartDate.getTime()) {
-        nextClosingDate = new Date(realStartDate.getFullYear(), realStartDate.getMonth() + 1, diaCierre);
+        nextClosingDate = new Date(
+          realStartDate.getFullYear(),
+          realStartDate.getMonth() + 1,
+          diaCierre,
+        );
       }
 
       nextClosingDate.setHours(23, 59, 59, 999);
@@ -177,15 +204,15 @@ export const Home = () => {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       const msPerDay = 1000 * 60 * 60 * 24;
-      const remaining = Math.ceil((nextClosingDate.getTime() - now.getTime()) / msPerDay);
+      const remaining = Math.ceil(
+        (nextClosingDate.getTime() - now.getTime()) / msPerDay,
+      );
 
       setDaysRemaining(Math.max(0, remaining));
       setPeriodLabel(
-        `P${periodNumber} (${format(realStartDate, 'd MMM', { locale: es })} - ${format(
-          nextClosingDate,
-          'd MMM',
-          { locale: es },
-        )})`.toUpperCase(),
+        `P${periodNumber} (${format(realStartDate, 'd MMM', {
+          locale: es,
+        })} - ${format(nextClosingDate, 'd MMM', { locale: es })})`.toUpperCase(),
       );
     } catch (error) {
       console.error('Error initializing period data:', error);
@@ -208,7 +235,11 @@ export const Home = () => {
     const finalDate = new Date(y, m - 1, d);
     const now = new Date();
     if (isSameDay(finalDate, now)) {
-      finalDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+      finalDate.setHours(
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+      );
     } else {
       finalDate.setHours(12, 0, 0);
     }
@@ -271,16 +302,20 @@ export const Home = () => {
   const categoryStats = categories.map((cat) => {
     const catExps = currentExpenses.filter((e) => e.categoria === cat.nombre);
     const spent = catExps.reduce((acc, curr) => acc + curr.monto, 0);
-    const percent = cat.presupuestoMensual > 0 ? (spent / cat.presupuestoMensual) * 100 : 0;
+    const percent =
+      cat.presupuestoMensual > 0 ? (spent / cat.presupuestoMensual) * 100 : 0;
     return { ...cat, spent, percent };
   });
 
-  // 👉 Orden para el bloque de “Estado de Presupuestos”: mayor % consumido primero
+  // Orden para el bloque de “Estado de Presupuestos”: mayor % consumido primero
   const categoryStatsSortedByPercent = [...categoryStats].sort(
-    (a, b) => b.percent - a.percent
+    (a, b) => b.percent - a.percent,
   );
 
-  const totalBudget = categoryStats.reduce((acc, c) => acc + c.presupuestoMensual, 0);
+  const totalBudget = categoryStats.reduce(
+    (acc, c) => acc + c.presupuestoMensual,
+    0,
+  );
   const totalSpent = categoryStats.reduce((acc, c) => acc + c.spent, 0);
 
   const isFixedCategory = (name: string) => {
@@ -295,7 +330,10 @@ export const Home = () => {
   };
 
   const fixedStats = categoryStats.filter((c) => isFixedCategory(c.nombre));
-  const fixedBudget = fixedStats.reduce((acc, c) => acc + c.presupuestoMensual, 0);
+  const fixedBudget = fixedStats.reduce(
+    (acc, c) => acc + c.presupuestoMensual,
+    0,
+  );
   const fixedSpent = fixedStats.reduce((acc, c) => acc + c.spent, 0);
   const variableBudget = Math.max(1, totalBudget - fixedBudget);
   const variableSpent = Math.max(0, totalSpent - fixedSpent);
@@ -324,7 +362,9 @@ export const Home = () => {
       {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Hola, {currentUser}</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Hola, {currentUser}
+          </h1>
         </div>
         <div className="text-right">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -333,7 +373,131 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* Input Module */}
+      {/* === RESUMEN ESTE MES (subido arriba) === */}
+      <Card className="bg-slate-900 text-white p-5 border-none shadow-xl relative overflow-hidden">
+        {/* Botón ojito */}
+        <button
+          type="button"
+          onClick={() => setShowMoney((prev) => !prev)}
+          className="absolute top-3 right-3 z-20 flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-slate-800/80 text-slate-100"
+        >
+          {showMoney ? (
+            <>
+              <EyeOff size={14} />
+              <span>Ocultar</span>
+            </>
+          ) : (
+            <>
+              <Eye size={14} />
+              <span>Ver</span>
+            </>
+          )}
+        </button>
+
+        {/* Contenido blurreable */}
+        <div
+          className={cn(
+            'relative z-10 transition-all',
+            !showMoney && 'blur-sm select-none pointer-events-none',
+          )}
+        >
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Este Mes
+                </span>
+              </div>
+              <p className="text-3xl font-bold tracking-tight">
+                € {formatMoney(totalSpent, 0)}
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <div
+                  className="h-1 w-24 bg-slate-700 rounded-full overflow-hidden"
+                  role="progressbar"
+                  aria-valuenow={Math.min(100, totalPercentReal)}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                >
+                  <div
+                    className="h-full bg-blue-500"
+                    style={{ width: `${Math.min(100, totalPercentReal)}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs text-slate-400">
+                  Límite: € {formatMoney(totalBudget, 0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Donut */}
+            <div className="relative h-16 w-16" aria-hidden="true">
+              <svg className="w-full h-full" viewBox="0 0 64 64">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r={radius}
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="transparent"
+                  className="text-slate-800"
+                />
+                <circle
+                  cx="32"
+                  cy="32"
+                  r={radius}
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="transparent"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  className={donutColor}
+                  strokeLinecap="round"
+                  transform="rotate(-90 32 32)"
+                />
+                <text
+                  x="32"
+                  y="32"
+                  className="fill-white text-[10px] font-bold"
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                >
+                  {totalPercentReal.toFixed(0)}%
+                </text>
+              </svg>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center">
+            <span className="text-xs text-slate-400">
+              Cierre: {format(activeEndDate, 'dd MMM', { locale: es })}
+            </span>
+            <span className="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded-lg">
+              Restan {daysRemaining} días
+            </span>
+          </div>
+
+          <button
+            onClick={() => setShowBudgetDetails(!showBudgetDetails)}
+            aria-expanded={showBudgetDetails}
+            aria-label="Ver detalles de presupuestos"
+            className="w-full mt-3 flex items-center justify-center pt-2 text-slate-500 hover:text-white transition-colors"
+          >
+            <ChevronUp size={16} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Overlay visual cuando está oculto (texto encima) */}
+        {!showMoney && (
+          <div className="absolute inset-0 bg-slate-900/60 z-10 flex items-center justify-center">
+            <p className="text-xs text-slate-300 text-center px-6">
+              Tocá el ojo para ver tus números del mes
+            </p>
+          </div>
+        )}
+      </Card>
+
+      {/* === INPUT MODULE (queda al medio, “dedos gordos”) === */}
       <Card className="p-3 bg-white shadow-sm border border-slate-100">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex gap-2 items-center">
@@ -428,94 +592,8 @@ export const Home = () => {
         </form>
       </Card>
 
-      {/* Monthly Summary */}
-      <Card className="bg-slate-900 text-white p-5 border-none shadow-xl relative overflow-hidden">
-        <div className="flex justify-between items-start">
-          <div className="z-10">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Este Mes
-              </span>
-            </div>
-            <p className="text-3xl font-bold tracking-tight">€ {formatMoney(totalSpent, 0)}</p>
-            <div className="mt-1 flex items-center gap-2">
-              <div
-                className="h-1 w-24 bg-slate-700 rounded-full overflow-hidden"
-                role="progressbar"
-                aria-valuenow={Math.min(100, totalPercentReal)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div
-                  className="h-full bg-blue-500"
-                  style={{ width: `${Math.min(100, totalPercentReal)}%` }}
-                ></div>
-              </div>
-              <span className="text-xs text-slate-400">
-                Límite: € {formatMoney(totalBudget, 0)}
-              </span>
-            </div>
-          </div>
-
-          {/* Donut */}
-          <div className="relative h-16 w-16" aria-hidden="true">
-            <svg className="w-full h-full" viewBox="0 0 64 64">
-              <circle
-                cx="32"
-                cy="32"
-                r={radius}
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="transparent"
-                className="text-slate-800"
-              />
-              <circle
-                cx="32"
-                cy="32"
-                r={radius}
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="transparent"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className={donutColor}
-                strokeLinecap="round"
-                transform="rotate(-90 32 32)"
-              />
-              <text
-                x="32"
-                y="32"
-                className="fill-white text-[10px] font-bold"
-                textAnchor="middle"
-                dominantBaseline="central"
-              >
-                {totalPercentReal.toFixed(0)}%
-              </text>
-            </svg>
-          </div>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center z-10 relative">
-          <span className="text-xs text-slate-400">
-            Cierre: {format(activeEndDate, 'dd MMM', { locale: es })}
-          </span>
-          <span className="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded-lg">
-            Restan {daysRemaining} días
-          </span>
-        </div>
-
-        <button
-          onClick={() => setShowBudgetDetails(!showBudgetDetails)}
-          aria-expanded={showBudgetDetails}
-          aria-label="Ver detalles de presupuestos"
-          className="w-full mt-3 flex items-center justify-center pt-2 text-slate-500 hover:text-white transición-colors"
-        >
-          <ChevronUp size={16} aria-hidden="true" />
-        </button>
-      </Card>
-
-      {/* Budget Details: ahora ordenado por % consumido */}
-      {showBudgetDetails && (
+      {/* Budget Details: solo visibles si el ojito está activado */}
+      {showBudgetDetails && showMoney && (
         <div className="space-y-2 animate-in slide-in-from-top-2">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
             Estado de Presupuestos
@@ -539,8 +617,12 @@ export const Home = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="font-bold text-slate-700">{cat.nombre}</span>
-                    <span className="text-slate-500">{Math.round(cat.percent)}%</span>
+                    <span className="font-bold text-slate-700">
+                      {cat.nombre}
+                    </span>
+                    <span className="text-slate-500">
+                      {Math.round(cat.percent)}%
+                    </span>
                   </div>
                   <div
                     className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"
@@ -556,7 +638,11 @@ export const Home = () => {
                     ></div>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1 text-right">
-                    Quedan € {formatMoney(Math.max(0, cat.presupuestoMensual - cat.spent), 0)}
+                    Quedan €{' '}
+                    {formatMoney(
+                      Math.max(0, cat.presupuestoMensual - cat.spent),
+                      0,
+                    )}
                   </p>
                 </div>
               </div>
@@ -578,11 +664,22 @@ export const Home = () => {
         >
           {currentExpenses
             .slice()
-            .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+            .sort(
+              (a, b) =>
+                new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+            )
             .slice(0, 5)
             .map((item) => {
-              const category = categories.find((c) => c.nombre === item.categoria);
+              const category = categories.find(
+                (c) => c.nombre === item.categoria,
+              );
               const Icon = getCategoryIcon(category?.icono || 'General');
+              const dateLabel = format(new Date(item.fecha), 'dd MMM', {
+                locale: es,
+              });
+              const secondaryText = item.descripcion
+                ? `${item.descripcion} · ${dateLabel}`
+                : dateLabel;
 
               return (
                 <div
@@ -596,10 +693,10 @@ export const Home = () => {
                       <Icon size={18} aria-hidden="true" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-800">{item.categoria}</p>
-                      <p className="text-xs text-slate-400">
-                        {item.descripcion || format(new Date(item.fecha), 'dd MMM')}
+                      <p className="text-sm font-bold text-slate-800">
+                        {item.categoria}
                       </p>
+                      <p className="text-xs text-slate-400">{secondaryText}</p>
                     </div>
                   </div>
                   <div className="text-right">
