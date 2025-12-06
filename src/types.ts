@@ -53,12 +53,12 @@ export interface MonthlyReport {
   id: string;
   anio?: number;
   mes?: number;
-
+  
   numeroPeriodo: number;
   fechaInicio?: string;
   fechaFin: string;
   fechaCierre: string;
-
+  
   estado?: string; // Campo opcional para compatibilidad con datos históricos
 
   detalles: CategoryReportDetail[];
@@ -74,8 +74,8 @@ export interface MonthlyExpense {
   fecha: string; // ISO string
   monto: number;
   moneda: CurrencyType;
-  categoria: string;
-  categoryId?: string;
+  categoria: string; 
+  categoryId?: string; 
   descripcion?: string;
   imagen_adjunta_url?: string;
   creado_por_usuario_id: User;
@@ -96,6 +96,9 @@ export interface Project {
   numero_personas?: number;
   noches_hotel?: number;
   tipo_cambio_referencia?: number; // 1 EUR = X moneda del viaje
+
+  // 🔹 Estado calculado a partir de fechas (futuro / en_curso / pasado)
+  estado_temporal?: 'futuro' | 'en_curso' | 'pasado';
 }
 
 export interface ProjectExpense {
@@ -112,4 +115,5 @@ export interface ProjectExpense {
   imagen_adjunta_url?: string;
   creado_por_usuario_id: User;
   estado: 'activo' | 'borrado';
+  created_at?: string;
 }
