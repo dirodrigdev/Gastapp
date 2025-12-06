@@ -120,7 +120,7 @@ export const deleteCategory = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'categories', id));
 };
 
-// ========================= PROYECTOS =========================
+// ========================= PROYECTOS (VIAJES / PROYECTOS) =========================
 
 export const getProjects = async (): Promise<Project[]> => {
   const snap = await getDocs(query(projectsCol, orderBy('created_at', 'desc')));
@@ -140,15 +140,26 @@ export const createProject = async (
   await addDoc(projectsCol, payload);
 };
 
-export const updateProject = async (project: Project): Promise<void> => {
-  if (!project.id) throw new Error('updateProject: falta id');
-  const { id, ...rest } = project;
-  await updateDoc(doc(db, 'projects', id), rest as any);
+// 👇 actualización parcial + limpieza de undefined (para evitar errores de Firestore)
+export const updateProject = async (
+  id: string,
+  data: Partial<Project>,
+): Promise<void> => {
+  const cleaned: any = {};
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  });
+
+  await updateDoc(doc(db, 'projects', id), cleaned);
 };
 
 export const deleteProject = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'projects', id));
 };
+
+// ========================= GASTOS DE PROYECTO =========================
 
 export const getProjectExpenses = async (
   projectId: string,
@@ -168,7 +179,11 @@ export const getProjectExpenses = async (
 export const addProjectExpense = async (
   expense: Omit<ProjectExpense, 'id'>,
 ): Promise<void> => {
-  await addDoc(projectExpensesCol, expense);
+  const payload: Omit<ProjectExpense, 'id'> = {
+    ...expense,
+    created_at: (expense as any).created_at ?? new Date().toISOString(),
+  };
+  await addDoc(projectExpensesCol, payload);
 };
 
 export const updateProjectExpense = async (
@@ -213,7 +228,6 @@ export const getMonthlyReports = async (): Promise<MonthlyReport[]> => {
   }));
 };
 
-// Genera un reporte de cierre simple, agregando gastos del periodo
 export const generateClosingReport = async (
   fechaCierre: Date,
 ): Promise<void> => {
