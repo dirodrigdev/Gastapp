@@ -45,16 +45,15 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Banner de conexión: aparece solo si no hay internet */}
+      {/* Banner de conexión */}
       <ConnectionBanner />
 
-      <main className="flex-1 max-w-md mx-auto w-full pb-20">
+      <main className="flex-1 max-w-md mx-auto w-full pb-24 pt-4">
         <Outlet />
       </main>
 
-      {/* Subimos la barra un poco para evitar la “rayita” del iPhone */}
-      <nav className="fixed bottom-2 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur">
-        <div className="max-w-md mx-auto flex justify-between px-4 py-2">
+      <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur">
+        <div className="max-w-md mx-auto flex justify-between px-4 pt-2 pb-5">
           {navItems
             .filter((item) => !item.onlyDiego || currentUser === 'Diego')
             .map((item) => {
