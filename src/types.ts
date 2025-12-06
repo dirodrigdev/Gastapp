@@ -112,15 +112,12 @@ export interface Project {
   // destino opcional (ej. "Cancún", "Bali 2025")
   destino?: string;
 
-  // moneda "principal" de este proyecto (para reportes)
-  // para viajes la estamos usando como moneda del viaje (MXN, THB, etc)
+  // moneda "principal" de este proyecto (para reportes / viaje)
   moneda_principal: CurrencyType;
 
-  // si en algún momento queremos diferenciar:
-  // moneda_viaje?: CurrencyType;
-
-  // tipo de cambio base que usemos (por ahora opcional, MVP)
-  tipo_cambio_eur_a_moneda?: number;
+  // tipo de cambio referencia que estamos usando en Trips.tsx
+  // (ej. cuántos MXN por 1 EUR, etc.)
+  tipo_cambio_referencia?: number;
 
   // presupuesto total del proyecto/viaje (en EUR, por ahora)
   presupuesto_total: number;
