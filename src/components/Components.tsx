@@ -2,6 +2,7 @@ import React from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import * as LucideIcons from 'lucide-react';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 
 // Utility para unir clases de Tailwind sin conflictos
 export function cn(...inputs: ClassValue[]) {
@@ -14,49 +15,47 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-2xl bg-white border border-slate-200 shadow-sm", className)}
+      className={cn('rounded-2xl bg-white border border-slate-200 shadow-sm', className)}
       {...props}
     />
   )
 );
-Card.displayName = "Card";
+Card.displayName = 'Card';
 
 export const Button = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger',
-    size?: 'sm' | 'md' | 'lg' | 'icon'
+    variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+    size?: 'sm' | 'md' | 'lg' | 'icon';
   }
->(
-  ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
-    const variants: Record<string, string> = {
-      primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-95",
-      secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200 active:scale-95",
-      outline: "border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-700",
-      ghost: "hover:bg-slate-100 text-slate-700 hover:text-slate-900",
-      danger: "bg-red-500 text-white hover:bg-red-600 shadow-sm active:scale-95",
-    };
-    const sizes: Record<string, string> = {
-      sm: "h-8 px-3 text-xs",
-      md: "h-10 px-4 py-2",
-      lg: "h-12 px-8 text-lg",
-      icon: "h-10 w-10 p-2 flex items-center justify-center"
-    };
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50",
-          variants[variant],
-          sizes[size],
-          className
-        )}
-        {...props}
-      />
-    );
-  }
-);
-Button.displayName = "Button";
+>(({ className, variant = 'primary', size = 'md', ...props }, ref) => {
+  const variants: Record<string, string> = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-95',
+    secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 active:scale-95',
+    outline: 'border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-700',
+    ghost: 'hover:bg-slate-100 text-slate-700 hover:text-slate-900',
+    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-sm active:scale-95',
+  };
+  const sizes: Record<string, string> = {
+    sm: 'h-8 px-3 text-xs',
+    md: 'h-10 px-4 py-2',
+    lg: 'h-12 px-8 text-lg',
+    icon: 'h-10 w-10 p-2 flex items-center justify-center',
+  };
+  return (
+    <button
+      ref={ref}
+      className={cn(
+        'inline-flex items-center justify-center rounded-xl font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50',
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      {...props}
+    />
+  );
+});
+Button.displayName = 'Button';
 
 export const Input = React.forwardRef<
   HTMLInputElement,
@@ -66,7 +65,7 @@ export const Input = React.forwardRef<
     <input
       type={type}
       className={cn(
-        "flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50",
+        'flex h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50',
         className
       )}
       ref={ref}
@@ -74,7 +73,7 @@ export const Input = React.forwardRef<
     />
   );
 });
-Input.displayName = "Input";
+Input.displayName = 'Input';
 
 interface SelectOption {
   label: string;
@@ -91,7 +90,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       <select
         ref={ref}
         className={cn(
-          "flex h-10 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50",
+          'flex h-10 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
         {...props}
@@ -105,7 +104,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     );
   }
 );
-Select.displayName = "Select";
+Select.displayName = 'Select';
 
 export const SwipeRow = ({
   children,
@@ -138,15 +137,12 @@ export const parseLocaleNumber = (stringNumber: string): number => {
   return isNaN(num) ? 0 : num;
 };
 
-export const formatLocaleNumber = (
-  amount: number,
-  decimals: number = 0,
-): string => {
+export const formatLocaleNumber = (amount: number, decimals: number = 0): string => {
   let num = Number(amount);
   if (isNaN(num)) num = 0;
   const fixed = num.toFixed(decimals);
   const [intPart, decPart] = fixed.split('.');
-  const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return decimals > 0 ? `${intFormatted},${decPart}` : intFormatted;
 };
 
@@ -154,7 +150,7 @@ export const formatLocaleNumber = (
 
 export const calculatePeriodInfo = (
   currentDate: Date = new Date(),
-  closingDay: number = 11,
+  closingDay: number = 11
 ) => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -237,3 +233,17 @@ export const ICON_KEYS = [
 ];
 
 export const ICON_MAP: any = LucideIcons;
+
+// --- BANNER DE CONEXIÓN ---
+
+export const ConnectionBanner: React.FC = () => {
+  const isOnline = useOnlineStatus();
+
+  if (isOnline) return null;
+
+  return (
+    <div className="bg-red-500 text-white text-xs px-3 py-2 text-center">
+      Sin conexión: espera a tener internet para ingresar los datos.
+    </div>
+  );
+};
