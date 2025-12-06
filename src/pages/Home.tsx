@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus,
-  ChevronDown,
   ChevronUp,
   Calendar as CalendarIcon,
   Eye,
@@ -53,7 +52,7 @@ export const Home = () => {
   const [selectedCatName, setSelectedCatName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [showBudgetDetails, setShowBudgetDetails] = useState(false);
-  const [currentUser, setCurrentUser] = useState(
+  const [currentUser] = useState(
     localStorage.getItem('currentUser') || 'Usuario',
   );
 
@@ -62,8 +61,17 @@ export const Home = () => {
   const [selectedExpense, setSelectedExpense] =
     useState<MonthlyExpense | null>(null);
 
-  // 👉 Visibilidad de números (ojito)
-  const [showMoney, setShowMoney] = useState(false);
+  // Visibilidad del resumen (“ojito”)
+  const [isSummaryHidden, setIsSummaryHidden] = useState<boolean>(() => {
+    const stored = localStorage.getItem('summaryHidden_v1');
+    // Por defecto: oculto
+    if (stored === null) return true;
+    return stored === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('summaryHidden_v1', isSummaryHidden ? 'true' : 'false');
+  }, [isSummaryHidden]);
 
   // --- CONEXIÓN EN TIEMPO REAL ---
   useEffect(() => {
@@ -83,7 +91,10 @@ export const Home = () => {
             });
             return;
           } catch (e) {
-            console.error('No se pudieron parsear las categorías legacy', e);
+            console.error(
+              'No se pudieron parsear las categorías legacy',
+              e,
+            );
           }
         }
       }
@@ -300,14 +311,18 @@ export const Home = () => {
   });
 
   const categoryStats = categories.map((cat) => {
-    const catExps = currentExpenses.filter((e) => e.categoria === cat.nombre);
+    const catExps = currentExpenses.filter(
+      (e) => e.categoria === cat.nombre,
+    );
     const spent = catExps.reduce((acc, curr) => acc + curr.monto, 0);
     const percent =
-      cat.presupuestoMensual > 0 ? (spent / cat.presupuestoMensual) * 100 : 0;
+      cat.presupuestoMensual > 0
+        ? (spent / cat.presupuestoMensual) * 100
+        : 0;
     return { ...cat, spent, percent };
   });
 
-  // Orden para el bloque de “Estado de Presupuestos”: mayor % consumido primero
+  // Orden para “Estado de Presupuestos”: mayor % consumido primero
   const categoryStatsSortedByPercent = [...categoryStats].sort(
     (a, b) => b.percent - a.percent,
   );
@@ -338,12 +353,16 @@ export const Home = () => {
   const variableBudget = Math.max(1, totalBudget - fixedBudget);
   const variableSpent = Math.max(0, totalSpent - fixedSpent);
 
-  const totalPercentReal = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+  const totalPercentReal =
+    totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
   const adjustedPercent = (variableSpent / variableBudget) * 100;
 
   const msInPeriod = activeEndDate.getTime() - activeStartDate.getTime();
   const msPassed = new Date().getTime() - activeStartDate.getTime();
-  const timePercent = Math.min(100, Math.max(0, (msPassed / msInPeriod) * 100));
+  const timePercent = Math.min(
+    100,
+    Math.max(0, (msPassed / msInPeriod) * 100),
+  );
 
   let donutColor = 'text-green-500';
   if (adjustedPercent > 100) {
@@ -355,7 +374,8 @@ export const Home = () => {
   const radius = 16;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset =
-    circumference - (Math.min(totalPercentReal, 100) / 100) * circumference;
+    circumference -
+    (Math.min(totalPercentReal, 100) / 100) * circumference;
 
   return (
     <div className="p-4 space-y-5 pb-24">
@@ -373,131 +393,190 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* === RESUMEN ESTE MES (subido arriba) === */}
+      {/* TARJETA NEGRA “ESTE MES” */}
       <Card className="bg-slate-900 text-white p-5 border-none shadow-xl relative overflow-hidden">
-        {/* Botón ojito */}
+        {/* Overlay de ocultar */}
+        {isSummaryHidden && (
+          <div className="absolute inset-0 bg-slate-900/95 flex items-center justify-center z-10">
+            <p className="text-[11px] text-slate-400 text-center px-6">
+              Tocá el ojo para ver tus números del mes.
+            </p>
+          </div>
+        )}
+
+        <div className={cn('flex justify-between items-start', isSummaryHidden && 'opacity-40')}>
+          <div className="z-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Este Mes
+              </span>
+            </div>
+            <p className="text-3xl font-bold tracking-tight">
+              € {formatMoney(totalSpent, 0)}
+            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <div
+                className="h-1 w-24 bg-slate-700 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={Math.min(100, totalPercentReal)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="h-full bg-blue-500"
+                  style={{ width: `${Math.min(100, totalPercentReal)}%` }}
+                ></div>
+              </div>
+              <span className="text-xs text-slate-400">
+                Límite: € {formatMoney(totalBudget, 0)}
+              </span>
+            </div>
+          </div>
+
+          {/* Donut */}
+          <div className="relative h-16 w-16" aria-hidden="true">
+            <svg className="w-full h-full" viewBox="0 0 64 64">
+              <circle
+                cx="32"
+                cy="32"
+                r={radius}
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="transparent"
+                className="text-slate-800"
+              />
+              <circle
+                cx="32"
+                cy="32"
+                r={radius}
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="transparent"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className={donutColor}
+                strokeLinecap="round"
+                transform="rotate(-90 32 32)"
+              />
+              <text
+                x="32"
+                y="32"
+                className="fill-white text-[10px] font-bold"
+                textAnchor="middle"
+                dominantBaseline="central"
+              >
+                {totalPercentReal.toFixed(0)}%
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center z-0 relative">
+          <span className="text-xs text-slate-400">
+            Cierre:{' '}
+            {format(activeEndDate, 'dd MMM', {
+              locale: es,
+            })}
+          </span>
+          <span className="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded-lg">
+            Restan {daysRemaining} días
+          </span>
+        </div>
+
+        {/* Botón Ver/Ocultar abajo a la derecha */}
         <button
           type="button"
-          onClick={() => setShowMoney((prev) => !prev)}
-          className="absolute top-3 right-3 z-20 flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-slate-800/80 text-slate-100"
+          onClick={() => setIsSummaryHidden((prev) => !prev)}
+          className="absolute right-4 bottom-4 z-20 inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-slate-800/95 text-[11px] font-medium text-slate-100"
         >
-          {showMoney ? (
-            <>
-              <EyeOff size={14} />
-              <span>Ocultar</span>
-            </>
-          ) : (
+          {isSummaryHidden ? (
             <>
               <Eye size={14} />
               <span>Ver</span>
             </>
+          ) : (
+            <>
+              <EyeOff size={14} />
+              <span>Ocultar</span>
+            </>
           )}
         </button>
 
-        {/* Contenido blurreable */}
-        <div
-          className={cn(
-            'relative z-10 transition-all',
-            !showMoney && 'blur-sm select-none pointer-events-none',
-          )}
+        {/* Botón de desplegar detalle de presupuestos */}
+        <button
+          onClick={() => setShowBudgetDetails(!showBudgetDetails)}
+          aria-expanded={showBudgetDetails}
+          aria-label="Ver detalles de presupuestos"
+          className="w-full mt-3 flex items-center justify-center pt-2 text-slate-500 hover:text-white transition-colors relative z-0"
         >
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Este Mes
-                </span>
-              </div>
-              <p className="text-3xl font-bold tracking-tight">
-                € {formatMoney(totalSpent, 0)}
-              </p>
-              <div className="mt-1 flex items-center gap-2">
-                <div
-                  className="h-1 w-24 bg-slate-700 rounded-full overflow-hidden"
-                  role="progressbar"
-                  aria-valuenow={Math.min(100, totalPercentReal)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className="h-full bg-blue-500"
-                    style={{ width: `${Math.min(100, totalPercentReal)}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs text-slate-400">
-                  Límite: € {formatMoney(totalBudget, 0)}
-                </span>
-              </div>
-            </div>
-
-            {/* Donut */}
-            <div className="relative h-16 w-16" aria-hidden="true">
-              <svg className="w-full h-full" viewBox="0 0 64 64">
-                <circle
-                  cx="32"
-                  cy="32"
-                  r={radius}
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="transparent"
-                  className="text-slate-800"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r={radius}
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="transparent"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  className={donutColor}
-                  strokeLinecap="round"
-                  transform="rotate(-90 32 32)"
-                />
-                <text
-                  x="32"
-                  y="32"
-                  className="fill-white text-[10px] font-bold"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                >
-                  {totalPercentReal.toFixed(0)}%
-                </text>
-              </svg>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center">
-            <span className="text-xs text-slate-400">
-              Cierre: {format(activeEndDate, 'dd MMM', { locale: es })}
-            </span>
-            <span className="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded-lg">
-              Restan {daysRemaining} días
-            </span>
-          </div>
-
-          <button
-            onClick={() => setShowBudgetDetails(!showBudgetDetails)}
-            aria-expanded={showBudgetDetails}
-            aria-label="Ver detalles de presupuestos"
-            className="w-full mt-3 flex items-center justify-center pt-2 text-slate-500 hover:text-white transition-colors"
-          >
-            <ChevronUp size={16} aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Overlay visual cuando está oculto (texto encima) */}
-        {!showMoney && (
-          <div className="absolute inset-0 bg-slate-900/60 z-10 flex items-center justify-center">
-            <p className="text-xs text-slate-300 text-center px-6">
-              Tocá el ojo para ver tus números del mes
-            </p>
-          </div>
-        )}
+          <ChevronUp
+            size={16}
+            aria-hidden="true"
+            className={showBudgetDetails ? 'rotate-180 transition-transform' : 'transition-transform'}
+          />
+        </button>
       </Card>
 
-      {/* === INPUT MODULE (queda al medio, “dedos gordos”) === */}
+      {/* DETALLE DE PRESUPUESTOS – pegado a la tarjeta negra */}
+      {showBudgetDetails && (
+        <div className="space-y-2 animate-in slide-in-from-top-2">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
+            Estado de Presupuestos
+          </h3>
+          {categoryStatsSortedByPercent.map((cat) => {
+            const Icon = getCategoryIcon(cat.icono || 'General');
+            const isFixed = isFixedCategory(cat.nombre);
+            let colorClass = 'bg-green-500';
+            if (cat.percent > 100) {
+              colorClass = 'bg-red-500';
+            } else if (!isFixed && cat.percent > timePercent + 5) {
+              colorClass = 'bg-yellow-500';
+            }
+            return (
+              <div
+                key={cat.id}
+                className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3"
+              >
+                <div className="bg-slate-50 p-2 rounded-lg text-slate-500">
+                  <Icon size={16} aria-hidden="true" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="font-bold text-slate-700">
+                      {cat.nombre}
+                    </span>
+                    <span className="text-slate-500">
+                      {Math.round(cat.percent)}%
+                    </span>
+                  </div>
+                  <div
+                    className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={Math.min(100, cat.percent)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Progreso de ${cat.nombre}`}
+                  >
+                    <div
+                      className={`h-full rounded-full ${colorClass}`}
+                      style={{ width: `${Math.min(100, cat.percent)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1 text-right">
+                    Quedan €{' '}
+                    {formatMoney(
+                      Math.max(0, cat.presupuestoMensual - cat.spent),
+                      0,
+                    )}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* MÓDULO DE INPUT (zona del pulgar) */}
       <Card className="p-3 bg-white shadow-sm border border-slate-100">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex gap-2 items-center">
@@ -524,7 +603,9 @@ export const Home = () => {
                 className="h-12 w-12 bg-slate-50 rounded-lg flex flex-col items-center justify-center text-blue-600 border border-slate-100 relative overflow-hidden"
               >
                 <CalendarIcon size={18} aria-hidden="true" />
-                <span className="text-[9px] font-bold">{getDateLabel()}</span>
+                <span className="text-[9px] font-bold">
+                  {getDateLabel()}
+                </span>
                 <input
                   type="date"
                   aria-label="Selector de fecha"
@@ -592,66 +673,7 @@ export const Home = () => {
         </form>
       </Card>
 
-      {/* Budget Details: solo visibles si el ojito está activado */}
-      {showBudgetDetails && showMoney && (
-        <div className="space-y-2 animate-in slide-in-from-top-2">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">
-            Estado de Presupuestos
-          </h3>
-          {categoryStatsSortedByPercent.map((cat) => {
-            const Icon = getCategoryIcon(cat.icono || 'General');
-            const isFixed = isFixedCategory(cat.nombre);
-            let colorClass = 'bg-green-500';
-            if (cat.percent > 100) {
-              colorClass = 'bg-red-500';
-            } else if (!isFixed && cat.percent > timePercent + 5) {
-              colorClass = 'bg-yellow-500';
-            }
-            return (
-              <div
-                key={cat.id}
-                className="bg-white p-3 rounded-xl border border-slate-100 flex items-center gap-3"
-              >
-                <div className="bg-slate-50 p-2 rounded-lg text-slate-500">
-                  <Icon size={16} aria-hidden="true" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="font-bold text-slate-700">
-                      {cat.nombre}
-                    </span>
-                    <span className="text-slate-500">
-                      {Math.round(cat.percent)}%
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={Math.min(100, cat.percent)}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`Progreso de ${cat.nombre}`}
-                  >
-                    <div
-                      className={`h-full rounded-full ${colorClass}`}
-                      style={{ width: `${Math.min(100, cat.percent)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1 text-right">
-                    Quedan €{' '}
-                    {formatMoney(
-                      Math.max(0, cat.presupuestoMensual - cat.spent),
-                      0,
-                    )}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Últimos movimientos */}
+      {/* ÚLTIMOS MOVIMIENTOS */}
       <div>
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
@@ -674,12 +696,9 @@ export const Home = () => {
                 (c) => c.nombre === item.categoria,
               );
               const Icon = getCategoryIcon(category?.icono || 'General');
-              const dateLabel = format(new Date(item.fecha), 'dd MMM', {
+              const fechaFmt = format(new Date(item.fecha), 'dd MMM', {
                 locale: es,
               });
-              const secondaryText = item.descripcion
-                ? `${item.descripcion} · ${dateLabel}`
-                : dateLabel;
 
               return (
                 <div
@@ -696,7 +715,11 @@ export const Home = () => {
                       <p className="text-sm font-bold text-slate-800">
                         {item.categoria}
                       </p>
-                      <p className="text-xs text-slate-400">{secondaryText}</p>
+                      <p className="text-xs text-slate-400">
+                        {item.descripcion
+                          ? `${item.descripcion} · ${fechaFmt}`
+                          : fechaFmt}
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
