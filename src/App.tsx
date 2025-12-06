@@ -9,9 +9,8 @@ import { History } from './pages/History';
 import { Settings } from './pages/Settings';
 import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
-
-// 👉 NUEVO: página de Viajes
 import { Trips } from './pages/Trips';
+import { TripDetail } from './pages/TripDetail';
 
 // Wrapper de seguridad
 const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
@@ -28,7 +27,7 @@ const App = () => {
       <Routes>
         {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
-        
+
         {/* Rutas privadas */}
         <Route element={<Layout />}>
           <Route
@@ -48,10 +47,18 @@ const App = () => {
             }
           />
           <Route
-            path="/settings"
+            path="/trips"
             element={
               <ProtectedRoute>
-                <Settings />
+                <Trips />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/trips/:id"
+            element={
+              <ProtectedRoute>
+                <TripDetail />
               </ProtectedRoute>
             }
           />
@@ -71,18 +78,16 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-
-          {/* 👉 NUEVO: VIAJES */}
           <Route
-            path="/trips"
+            path="/settings"
             element={
               <ProtectedRoute>
-                <Trips />
+                <Settings />
               </ProtectedRoute>
             }
           />
         </Route>
-        
+
         {/* Redirección por defecto */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
