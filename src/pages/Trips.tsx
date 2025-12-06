@@ -49,6 +49,7 @@ export const Trips: React.FC = () => {
   const [personas, setPersonas] = useState<string>('2');
   const [nochesHotel, setNochesHotel] = useState<string>('');
   const [nochesFuera, setNochesFuera] = useState<string>('');
+  const [presupuesto, setPresupuesto] = useState<string>('');
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,7 +76,6 @@ export const Trips: React.FC = () => {
     e.preventDefault();
 
     const nombreOk = nombre.trim().length > 0;
-    const destinoOk = destino.trim().length > 0;
     const currency = resolveCurrency();
     const monedaOk = currency.toString().trim().length > 0;
 
@@ -84,7 +84,19 @@ export const Trips: React.FC = () => {
     const nochesFueraNum = nochesFuera ? parseInt(nochesFuera, 10) : 0;
     const tipoCambioNum = parseFloat(tipoCambioRef.replace(',', '.'));
 
-    if (!nombreOk || !destinoOk || !monedaOk || !personasNum || !nochesHotelNum || !tipoCambioNum) {
+    // Presupuesto opcional
+    const presupuestoNum = presupuesto
+      ? parseFloat(presupuesto.replace(/\./g, '').replace(',', '.'))
+      : 0;
+
+    // Validamos SOLO obligatorios: nombre, moneda, tipo de cambio, personas, noches hotel
+    if (
+      !nombreOk ||
+      !monedaOk ||
+      !personasNum ||
+      !nochesHotelNum ||
+      !tipoCambioNum
+    ) {
       setFormError('Faltan datos obligatorios por ingresar.');
       return;
     }
@@ -96,10 +108,10 @@ export const Trips: React.FC = () => {
       await createProject({
         tipo: ProjectType.TRIP,
         nombre: nombre.trim(),
-        destino: destino.trim(),
+        destino: destino.trim() || undefined,
         moneda_principal: currency,
         tipo_cambio_referencia: tipoCambioNum,
-        presupuesto_total: 0,
+        presupuesto_total: isNaN(presupuestoNum) ? 0 : presupuestoNum,
         numero_personas: personasNum,
         noches_hotel: nochesHotelNum,
         noches_fuera: nochesFueraNum || 0,
@@ -120,6 +132,7 @@ export const Trips: React.FC = () => {
       setPersonas('2');
       setNochesHotel('');
       setNochesFuera('');
+      setPresupuesto('');
     } catch (err) {
       console.error(err);
       setFormError('Ocurrió un error al guardar el viaje.');
@@ -194,7 +207,7 @@ export const Trips: React.FC = () => {
             <div>
               <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
                 <MapPin size={12} />
-                Destino principal *
+                Destino principal (opcional)
               </label>
               <Input
                 placeholder="Ej: Cancún"
@@ -261,6 +274,18 @@ export const Trips: React.FC = () => {
             </div>
           </div>
 
+          <div>
+            <label className="text-xs font-semibold text-slate-600">
+              Presupuesto estimado (opcional)
+            </label>
+            <Input
+              placeholder="Ej: 2.500,00"
+              inputMode="decimal"
+              value={presupuesto}
+              onChange={(e) => setPresupuesto(e.target.value)}
+            />
+          </div>
+
           <Button
             type="submit"
             disabled={loading}
@@ -320,6 +345,15 @@ export const Trips: React.FC = () => {
                         {p.noches_hotel || 0} noches hotel
                       </span>
                     </p>
+                    {typeof p.presupuesto_total === 'number' && p.presupuesto_total > 0 && (
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        Presupuesto: {p.presupuesto_total.toLocaleString('es-ES', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        })}{' '}
+                        {p.moneda_principal}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
