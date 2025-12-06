@@ -120,7 +120,7 @@ export const deleteCategory = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'categories', id));
 };
 
-// ========================= PROYECTOS / VIAJES =========================
+// ========================= PROYECTOS =========================
 
 export const getProjects = async (): Promise<Project[]> => {
   const snap = await getDocs(query(projectsCol, orderBy('created_at', 'desc')));
@@ -140,6 +140,16 @@ export const createProject = async (
   await addDoc(projectsCol, payload);
 };
 
+export const updateProject = async (project: Project): Promise<void> => {
+  if (!project.id) throw new Error('updateProject: falta id');
+  const { id, ...rest } = project;
+  await updateDoc(doc(db, 'projects', id), rest as any);
+};
+
+export const deleteProject = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'projects', id));
+};
+
 export const getProjectExpenses = async (
   projectId: string,
 ): Promise<ProjectExpense[]> => {
@@ -155,16 +165,10 @@ export const getProjectExpenses = async (
   }));
 };
 
-type ProjectExpensePayload = Omit<ProjectExpense, 'id'> & { created_at?: string };
-
 export const addProjectExpense = async (
-  expense: Omit<ProjectExpense, 'id' | 'created_at'>,
+  expense: Omit<ProjectExpense, 'id'>,
 ): Promise<void> => {
-  const payload: ProjectExpensePayload = {
-    ...expense,
-    created_at: new Date().toISOString(),
-  };
-  await addDoc(projectExpensesCol, payload);
+  await addDoc(projectExpensesCol, expense);
 };
 
 export const updateProjectExpense = async (
