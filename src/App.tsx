@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
@@ -12,7 +12,10 @@ import { Trips } from './pages/Trips';
 
 import Splash from './components/Splash';
 
-// Pequeño wrapper para proteger rutas si no hay usuario
+// Flag para activar/desactivar el splash fácilmente
+const shouldUseSplash =
+  (import.meta as any)?.env?.VITE_ENABLE_SPLASH !== '0';
+
 const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   const user = localStorage.getItem('currentUser');
   if (!user) {
@@ -21,30 +24,12 @@ const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   return <>{children}</>;
 };
 
-// Flag para activar/desactivar el splash fácilmente
-const shouldUseSplash =
-  (import.meta as any)?.env?.VITE_ENABLE_SPLASH !== '0';
-
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState<boolean>(shouldUseSplash);
-
-  // Seguridad extra: si por cualquier cosa no se dispara onFinish
-  useEffect(() => {
-    if (!shouldUseSplash) return;
-    const maxTimeout = setTimeout(() => {
-      setShowSplash(false);
-    }, 3000);
-    return () => clearTimeout(maxTimeout);
-  }, []);
-
   return (
     <HashRouter>
-      {/* Splash por encima de todo */}
-      {showSplash && shouldUseSplash && (
-        <Splash onFinish={() => setShowSplash(false)} />
-      )}
+      {/* Splash encima de todo, la app siempre está detrás */}
+      {shouldUseSplash && <Splash />}
 
-      {/* La app vive siempre detrás; mientras showSplash=true, queda “tapada” */}
       <Routes>
         {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
