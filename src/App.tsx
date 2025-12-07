@@ -3,7 +3,6 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
 
-// Páginas
 import { Onboarding } from './pages/Onboarding';
 import { Home } from './pages/Home';
 import { History } from './pages/History';
@@ -12,9 +11,7 @@ import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
 
-// ⚠️ IMPORTANTE: sin Splash por ahora
-// import { Splash } from './components/Splash';
-
+// Wrapper de seguridad
 const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   const user = localStorage.getItem('currentUser');
   if (!user) {
@@ -27,10 +24,10 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <Routes>
-        {/* Onboarding público */}
+        {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Resto de la app con Layout */}
+        {/* Rutas privadas con layout */}
         <Route element={<Layout />}>
           <Route
             path="/"
@@ -82,7 +79,7 @@ const App: React.FC = () => {
           />
         </Route>
 
-        {/* Fallback */}
+        {/* Redirección por defecto */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
