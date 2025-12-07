@@ -12,8 +12,8 @@ import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
 
-// Splash
-import { Splash } from './components/splash';
+// 👇 OJO: nombre con mayúscula igual que el archivo
+import { Splash } from './components/Splash';
 
 // Flag rápida por si quieres desactivar el splash
 const ENABLE_SPLASH = true;
@@ -35,7 +35,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // Si ya se vio antes, saltamos directo a la app
     const alreadySeen = localStorage.getItem('gastapp_splash_seen');
     if (alreadySeen === '1') {
       setShowSplash(false);
@@ -54,10 +53,8 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <Routes>
-        {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Rutas privadas con layout */}
         <Route element={<Layout />}>
           <Route
             path="/"
@@ -109,7 +106,6 @@ const App: React.FC = () => {
           />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
