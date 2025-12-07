@@ -6,7 +6,7 @@ import {
   Users,
   Moon,
   Calendar as CalendarIcon,
-  PlusCircle,
+  Plus,
   Trash2,
   Eye,
   EyeOff,
@@ -38,7 +38,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 // === Categorías fijas de viaje ===
-const TRIP_CATEGORIES = [
+const TRIP_CATEGORIES: string[] = [
   'Vuelos',
   'Hoteles',
   'Comidas',
@@ -53,6 +53,14 @@ const TRIP_CATEGORIES = [
 type CurrencyMode = 'EUR' | 'TRIP';
 
 const todayYMD = () => new Date().toISOString().slice(0, 10);
+
+const isSameDate = (a: Date, b: Date) => {
+  const da = new Date(a);
+  const db = new Date(b);
+  da.setHours(0, 0, 0, 0);
+  db.setHours(0, 0, 0, 0);
+  return da.getTime() === db.getTime();
+};
 
 export const TripDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -73,19 +81,8 @@ export const TripDetail: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Visibilidad de importes (blur)
-  const [showAmounts, setShowAmounts] = useState<boolean>(() => {
-    const stored = localStorage.getItem('tripShowAmounts');
-    return stored ? stored === 'true' : true;
-  });
-
-  const toggleShowAmounts = () => {
-    setShowAmounts((prev) => {
-      const next = !prev;
-      localStorage.setItem('tripShowAmounts', String(next));
-      return next;
-    });
-  };
+  // Ocultar/mostrar resumen (ojito)
+  const [isSummaryHidden, setIsSummaryHidden] = useState<boolean>(true);
 
   // ============ CARGA INICIAL ============
 
@@ -150,10 +147,37 @@ export const TripDetail: React.FC = () => {
   const presupuesto = project?.presupuesto_total ?? 0;
   const restante = presupuesto > 0 ? presupuesto - totalEUR : null;
 
-  const budgetPercent =
-    presupuesto > 0 ? (totalEUR / presupuesto) * 100 : 0;
-
   const currentUser = (localStorage.getItem('currentUser') as User) || 'Diego';
+
+  // ============ HELPERS ============
+
+  const handleAmountBlur = () => {
+    const val = parseLocaleNumber(monto);
+    if (val > 0) setMonto(formatLocaleNumber(val, 2));
+  };
+
+  // Orden de categorías por uso (más usadas primero)
+  const usageCount: Record<string, number> = {};
+  expenses.forEach((e) => {
+    if (e.categoria && TRIP_CATEGORIES.includes(e.categoria)) {
+      usageCount[e.categoria] = (usageCount[e.categoria] || 0) + 1;
+    }
+  });
+
+  const baseOrder: Record<string, number> = TRIP_CATEGORIES.reduce(
+    (acc, name, idx) => {
+      acc[name] = idx;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  const sortedTripCategories = [...TRIP_CATEGORIES].sort((a, b) => {
+    const ca = usageCount[a] || 0;
+    const cb = usageCount[b] || 0;
+    if (cb !== ca) return cb - ca;
+    return (baseOrder[a] ?? 0) - (baseOrder[b] ?? 0);
+  });
 
   // ============ HANDLERS GASTOS ============
 
@@ -175,7 +199,7 @@ export const TripDetail: React.FC = () => {
     const fechaISO = new Date(`${fecha}T00:00:00`).toISOString();
     let monto_en_moneda_principal = 0;
     let monto_en_moneda_proyecto = 0;
-    let monto_original = amount;
+    const monto_original = amount;
     let moneda_original: string;
     let tipo_cambio_usado = 0;
 
@@ -188,6 +212,7 @@ export const TripDetail: React.FC = () => {
         tipo_cambio_usado = project.tipo_cambio_referencia;
         monto_en_moneda_proyecto = amount * project.tipo_cambio_referencia;
       } else {
+        // Sin tipo de cambio, dejamos 0 en moneda viaje
         tipo_cambio_usado = 0;
         monto_en_moneda_proyecto = 0;
       }
@@ -295,6 +320,19 @@ export const TripDetail: React.FC = () => {
     );
   }
 
+  // Ordenar gastos por fecha descendente para últimos movimientos
+  const sortedExpenses = [...expenses].sort((a, b) => {
+    const da = a.fecha ? new Date(a.fecha).getTime() : 0;
+    const db = b.fecha ? new Date(b.fecha).getTime() : 0;
+    return db - da;
+  });
+  const lastExpenses = sortedExpenses.slice(0, 5);
+
+  const fechaDate = new Date(fecha);
+  const fechaLabel = isSameDate(fechaDate, new Date())
+    ? 'HOY'
+    : format(fechaDate, 'd MMM', { locale: es }).toUpperCase();
+
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Header */}
@@ -337,97 +375,114 @@ export const TripDetail: React.FC = () => {
         <RefreshButton />
       </div>
 
-      {/* Resumen del viaje con BLUR y botón Ver/Ocultar */}
-      <Card className="p-5 bg-gradient-to-br from-sky-900 via-sky-800 to-sky-700 text-white border-none shadow-xl relative overflow-hidden">
-        {/* Botón Ver/Ocultar */}
-        <button
-          type="button"
-          onClick={toggleShowAmounts}
-          className="absolute top-3 right-3 z-20 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-sky-900/50 border border-sky-500/60 text-[10px] font-medium text-sky-50"
-        >
-          {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
-          <span>{showAmounts ? 'Ocultar' : 'Ver'}</span>
-        </button>
-
-        {/* Contenido que se blurea */}
+      {/* Resumen del viaje con ojito + blur y tema azul/turquesa */}
+      <Card className="relative bg-gradient-to-br from-sky-900 via-sky-800 to-sky-700 text-white p-5 border-none shadow-xl overflow-hidden">
+        {/* Contenido real */}
         <div
           className={cn(
-            'relative z-10 flex justify-between items-start gap-3 transition-all',
-            !showAmounts && 'blur-md select-none',
+            'relative transition-all',
+            isSummaryHidden && 'pointer-events-none select-none blur-sm brightness-50',
           )}
         >
-          <div className="flex-1">
-            <p className="text-[10px] uppercase tracking-wide text-sky-200 font-semibold">
-              Este viaje
-            </p>
-            <p className="mt-1 text-3xl font-bold tracking-tight">
-              € {formatLocaleNumber(totalEUR, 0)}
-            </p>
-            <p className="mt-1 text-[11px] text-sky-100">
-              Presupuesto:{' '}
-              {presupuesto > 0
-                ? `€ ${formatLocaleNumber(presupuesto, 0)}`
-                : 'sin definir'}
-            </p>
-
-            {presupuesto > 0 && (
-              <div className="mt-2">
-                <div className="h-1 w-28 bg-sky-900/60 rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      budgetPercent <= 80
-                        ? 'bg-emerald-400'
-                        : budgetPercent <= 100
-                        ? 'bg-amber-300'
-                        : 'bg-rose-400',
-                    )}
-                    style={{ width: `${Math.min(budgetPercent, 130)}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-[10px] text-sky-100">
-                  {budgetPercent.toFixed(0)}% del presupuesto usado
-                </p>
+          <div className="flex justify-between items-start">
+            <div className="z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-bold text-sky-200 uppercase tracking-wider">
+                  Resumen del viaje
+                </span>
               </div>
-            )}
+              <p className="text-3xl font-bold tracking-tight">
+                € {formatLocaleNumber(totalEUR, 0)}
+              </p>
+              <p className="text-[11px] text-sky-100/80 mt-1">
+                Gastado en este viaje (en EUR).
+              </p>
+            </div>
+
+            <div className="text-right text-xs z-10">
+              <p className="text-sky-200 text-[10px] uppercase mb-1">
+                Presupuesto
+              </p>
+              <p className="font-semibold">
+                {presupuesto > 0
+                  ? `€ ${formatLocaleNumber(presupuesto, 0)}`
+                  : 'Sin definir'}
+              </p>
+              {restante !== null && (
+                <p
+                  className={cn(
+                    'mt-1 text-[11px] font-semibold',
+                    restante >= 0 ? 'text-emerald-200' : 'text-rose-200',
+                  )}
+                >
+                  {restante >= 0
+                    ? `Te quedan € ${formatLocaleNumber(restante, 0)}`
+                    : `Te pasaste € ${formatLocaleNumber(
+                        Math.abs(restante),
+                        0,
+                      )}`}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-col items-end text-right">
-            <span
-              className={cn(
-                'px-2 py-1 rounded-lg text-[11px] font-semibold',
-                restante === null
-                  ? 'bg-sky-900/60 text-sky-100'
-                  : restante >= 0
-                  ? 'bg-emerald-500/20 text-emerald-200'
-                  : 'bg-rose-500/20 text-rose-100',
-              )}
-            >
-              {restante === null
-                ? 'Sin presupuesto'
-                : restante >= 0
-                ? `Te quedan € ${formatLocaleNumber(restante, 0)}`
-                : `Te pasaste en € ${formatLocaleNumber(
-                    Math.abs(restante),
-                    0,
-                  )}`}
-            </span>
-
-            {totalTripCurrency !== null && project.moneda_proyecto && (
-              <p className="mt-3 text-[11px] text-sky-100">
-                ≈ {formatLocaleNumber(totalTripCurrency, 0)}{' '}
-                {project.moneda_proyecto}
+          <div className="mt-4 pt-3 border-t border-sky-700/80 grid grid-cols-2 gap-3 text-xs z-10">
+            <div>
+              <span className="block text-sky-200 text-[10px] uppercase tracking-wider mb-1">
+                Moneda del viaje
+              </span>
+              <p className="font-semibold">
+                {project.moneda_proyecto || '—'}
               </p>
-            )}
+              <p className="text-[11px] text-sky-100/80 mt-1">
+                Ref: 1 EUR ≈{' '}
+                {project.tipo_cambio_referencia
+                  ? `${formatLocaleNumber(project.tipo_cambio_referencia, 2)} ${
+                      project.moneda_proyecto || ''
+                    }`
+                  : 'sin tipo de cambio'}
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="block text-sky-200 text-[10px] uppercase tracking-wider mb-1">
+                Total en moneda viaje
+              </span>
+              <p className="font-semibold">
+                {totalTripCurrency !== null && project.moneda_proyecto
+                  ? `${formatLocaleNumber(totalTripCurrency, 0)} ${
+                      project.moneda_proyecto
+                    }`
+                  : '—'}
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Overlay de oculto */}
+        {isSummaryHidden && (
+          <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-2xl flex flex-col items-center justify-center z-20 px-6">
+            <p className="text-xs text-sky-100 text-center mb-2">
+              Toca “Ver” para mostrar el estado del presupuesto de este viaje.
+            </p>
+          </div>
+        )}
+
+        {/* Botón ojito, abajo a la derecha */}
+        <button
+          type="button"
+          onClick={() => setIsSummaryHidden((prev) => !prev)}
+          className="absolute bottom-3 right-3 z-30 inline-flex items-center gap-1 rounded-full bg-sky-950/80 px-3 py-1 text-[10px] text-sky-50 hover:bg-sky-900/90"
+        >
+          {isSummaryHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+          <span>{isSummaryHidden ? 'Ver' : 'Ocultar'}</span>
+        </button>
       </Card>
 
-      {/* Form de nuevo gasto */}
-      <Card className="p-4">
+      {/* Módulo de ingreso de gasto estilo Home */}
+      <Card className="p-3 bg-white shadow-sm border border-slate-100">
         <div className="flex items-center gap-2 mb-3">
           <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-700">
-            <PlusCircle size={18} />
+            <Plus size={18} />
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-800">
@@ -440,98 +495,125 @@ export const TripDetail: React.FC = () => {
         </div>
 
         <form onSubmit={handleAddExpense} className="space-y-3">
-          {/* Fecha + categoría */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                Fecha
-                <CalendarIcon size={10} className="text-slate-400" />
-              </label>
+          {/* Monto + fecha (igual que Home) */}
+          <div className="flex gap-2 items-center">
+            <div className="flex-1 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
+                €
+              </span>
               <Input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-medium text-slate-500">
-                Categoría
-              </label>
-              <Select
-                className="mt-1 text-sm"
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
-                options={TRIP_CATEGORIES.map((c) => ({
-                  label: c,
-                  value: c,
-                }))}
-              />
-            </div>
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="text-[11px] font-medium text-slate-500">
-              Descripción (opcional)
-            </label>
-            <Input
-              value={descripcion}
-              onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Ej: Cena en el hotel, taxi aeropuerto..."
-              className="mt-1 text-sm"
-            />
-          </div>
-
-          {/* Monto + modo de moneda */}
-          <div className="grid grid-cols-[1.2fr_0.8fr] gap-2 items-end">
-            <div>
-              <label className="text-[11px] font-medium text-slate-500">
-                Monto
-              </label>
-              <Input
+                id="trip-amount-input"
+                type="text"
+                inputMode="decimal"
+                aria-label="Monto del gasto del viaje"
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
-                inputMode="decimal"
-                placeholder={
-                  currencyMode === 'TRIP'
-                    ? `En ${project.moneda_proyecto || 'moneda viaje'}`
-                    : 'En EUR'
-                }
-                className="mt-1 text-sm"
+                onBlur={handleAmountBlur}
+                placeholder="0,00"
+                className="pl-8 py-2 text-2xl font-bold border-none bg-slate-50 focus:ring-0 rounded-lg text-slate-800 placeholder:text-slate-200"
               />
             </div>
-            <div>
-              <label className="text-[11px] font-medium text-slate-500">
-                Moneda
-              </label>
-              <div className="mt-1 flex rounded-xl border border-slate-200 overflow-hidden text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => setCurrencyMode('EUR')}
-                  className={cn(
-                    'flex-1 py-1.5 text-center',
-                    currencyMode === 'EUR'
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-white text-slate-600',
-                  )}
-                >
-                  EUR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrencyMode('TRIP')}
-                  className={cn(
-                    'flex-1 py-1.5 text-center',
-                    currencyMode === 'TRIP'
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-white text-slate-600',
-                  )}
-                >
-                  {project.moneda_proyecto || 'Viaje'}
-                </button>
-              </div>
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Cambiar fecha del gasto de viaje"
+                className="h-12 w-12 bg-slate-50 rounded-lg flex flex-col items-center justify-center text-sky-600 border border-slate-100 relative overflow-hidden"
+              >
+                <CalendarIcon size={18} aria-hidden="true" />
+                <span className="text-[9px] font-bold">
+                  {fechaLabel}
+                </span>
+                <input
+                  type="date"
+                  aria-label="Selector de fecha del gasto de viaje"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  value={fecha}
+                  onChange={(e) => setFecha(e.target.value)}
+                />
+              </button>
             </div>
+          </div>
+
+          {/* Categorías en chips horizontales (ordenadas por uso) */}
+          <div
+            role="group"
+            aria-label="Categoría del gasto de viaje"
+            className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1"
+          >
+            {sortedTripCategories.map((cat) => {
+              const isSelected = categoria === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => setCategoria(cat)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-1 min-w-[72px] px-3 py-2 rounded-xl transition-all border text-[10px]',
+                    isSelected
+                      ? 'bg-sky-600 border-sky-600 text-white shadow-md scale-105'
+                      : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50',
+                  )}
+                >
+                  <span className="font-medium truncate w-full text-center">
+                    {cat}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selector de moneda */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] text-slate-500">
+              Moneda en la que estás ingresando
+            </span>
+            <div className="flex rounded-xl border border-slate-200 overflow-hidden text-[11px]">
+              <button
+                type="button"
+                onClick={() => setCurrencyMode('EUR')}
+                className={cn(
+                  'flex-1 py-1.5 px-3 text-center',
+                  currencyMode === 'EUR'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white text-slate-600',
+                )}
+              >
+                EUR
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrencyMode('TRIP')}
+                className={cn(
+                  'flex-1 py-1.5 px-3 text-center',
+                  currencyMode === 'TRIP'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-white text-slate-600',
+                )}
+              >
+                {project.moneda_proyecto || 'Viaje'}
+              </button>
+            </div>
+          </div>
+
+          {/* Descripción + botón guardar (como Home) */}
+          <div className="flex gap-2">
+            <Input
+              id="trip-description-input"
+              aria-label="Descripción del gasto del viaje (opcional)"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Descripción (Opcional)"
+              className="py-2 text-sm bg-slate-50 border-none"
+            />
+            <Button
+              type="submit"
+              disabled={saving}
+              aria-label="Agregar gasto al viaje"
+              className="aspect-square p-0 w-10 h-10 rounded-xl bg-sky-600 text-white shrink-0"
+            >
+              <Plus size={20} aria-hidden="true" />
+            </Button>
           </div>
 
           {/* Error */}
@@ -540,18 +622,14 @@ export const TripDetail: React.FC = () => {
               <span>{formError}</span>
             </div>
           )}
-
-          <Button type="submit" disabled={saving} className="w-full mt-1">
-            {saving ? 'Guardando gasto…' : 'Añadir gasto al viaje'}
-          </Button>
         </form>
       </Card>
 
-      {/* Historial de gastos */}
+      {/* Últimos movimientos del viaje */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Historial del viaje
+            Últimos movimientos del viaje
           </h3>
           {loadingExpenses && (
             <span className="text-[10px] text-slate-400">
@@ -560,17 +638,17 @@ export const TripDetail: React.FC = () => {
           )}
         </div>
 
-        {expenses.length === 0 && (
+        {lastExpenses.length === 0 && (
           <Card className="p-4 text-[12px] text-slate-400">
             Aún no registras gastos para este viaje. Empieza arriba con el
             formulario.
           </Card>
         )}
 
-        {expenses.length > 0 && (
+        {lastExpenses.length > 0 && (
           <Card className="divide-y divide-slate-100">
-            {expenses.map((exp) => {
-              const fechaLabel = exp.fecha
+            {lastExpenses.map((exp) => {
+              const fechaLabelExp = exp.fecha
                 ? format(new Date(exp.fecha), 'dd MMM', { locale: es })
                 : '';
               const baseEUR =
@@ -587,7 +665,7 @@ export const TripDetail: React.FC = () => {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-slate-400 w-12">
-                        {fechaLabel}
+                        {fechaLabelExp}
                       </span>
                       <span className="text-[12px] font-medium text-slate-800">
                         {exp.categoria}
