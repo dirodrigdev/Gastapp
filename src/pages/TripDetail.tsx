@@ -8,6 +8,8 @@ import {
   Calendar as CalendarIcon,
   PlusCircle,
   Trash2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -70,6 +72,20 @@ export const TripDetail: React.FC = () => {
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>('TRIP');
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Visibilidad de importes (blur)
+  const [showAmounts, setShowAmounts] = useState<boolean>(() => {
+    const stored = localStorage.getItem('tripShowAmounts');
+    return stored ? stored === 'true' : true;
+  });
+
+  const toggleShowAmounts = () => {
+    setShowAmounts((prev) => {
+      const next = !prev;
+      localStorage.setItem('tripShowAmounts', String(next));
+      return next;
+    });
+  };
 
   // ============ CARGA INICIAL ============
 
@@ -134,6 +150,9 @@ export const TripDetail: React.FC = () => {
   const presupuesto = project?.presupuesto_total ?? 0;
   const restante = presupuesto > 0 ? presupuesto - totalEUR : null;
 
+  const budgetPercent =
+    presupuesto > 0 ? (totalEUR / presupuesto) * 100 : 0;
+
   const currentUser = (localStorage.getItem('currentUser') as User) || 'Diego';
 
   // ============ HANDLERS GASTOS ============
@@ -169,7 +188,6 @@ export const TripDetail: React.FC = () => {
         tipo_cambio_usado = project.tipo_cambio_referencia;
         monto_en_moneda_proyecto = amount * project.tipo_cambio_referencia;
       } else {
-        // Sin tipo de cambio, dejamos 0 en moneda viaje
         tipo_cambio_usado = 0;
         monto_en_moneda_proyecto = 0;
       }
@@ -188,8 +206,6 @@ export const TripDetail: React.FC = () => {
       monto_en_moneda_principal = amount / project.tipo_cambio_referencia;
     }
 
-    const cleanedDescripcion = descripcion.trim();
-
     const payload: Omit<ProjectExpense, 'id'> = {
       proyecto_id: id,
       fecha: fechaISO,
@@ -199,8 +215,7 @@ export const TripDetail: React.FC = () => {
       monto_en_moneda_proyecto,
       monto_en_moneda_principal,
       categoria: categoria || 'Otros',
-      // 🔧 nunca mandamos undefined, Firestore se queja
-      descripcion: cleanedDescripcion || '',
+      descripcion: descripcion || undefined,
       imagen_adjunta_url: undefined,
       creado_por_usuario_id: currentUser,
       estado: 'activo',
@@ -322,67 +337,88 @@ export const TripDetail: React.FC = () => {
         <RefreshButton />
       </div>
 
-      {/* Resumen */}
-      <Card className="p-4 bg-gradient-to-br from-sky-50 to-sky-100 border-sky-100">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-sky-600 font-semibold">
-              Resumen del viaje
-            </p>
-            <p className="text-xs text-slate-500">
-              Totales basados en lo registrado hasta ahora.
-            </p>
-          </div>
-        </div>
+      {/* Resumen del viaje con BLUR y botón Ver/Ocultar */}
+      <Card className="p-5 bg-gradient-to-br from-sky-900 via-sky-800 to-sky-700 text-white border-none shadow-xl relative overflow-hidden">
+        {/* Botón Ver/Ocultar */}
+        <button
+          type="button"
+          onClick={toggleShowAmounts}
+          className="absolute top-3 right-3 z-20 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-sky-900/50 border border-sky-500/60 text-[10px] font-medium text-sky-50"
+        >
+          {showAmounts ? <EyeOff size={14} /> : <Eye size={14} />}
+          <span>{showAmounts ? 'Ocultar' : 'Ver'}</span>
+        </button>
 
-        <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
-          <div>
-            <p className="text-[11px] text-slate-500">Total gastado (EUR)</p>
-            <p className="text-base font-bold text-slate-900">
+        {/* Contenido que se blurea */}
+        <div
+          className={cn(
+            'relative z-10 flex justify-between items-start gap-3 transition-all',
+            !showAmounts && 'blur-md select-none',
+          )}
+        >
+          <div className="flex-1">
+            <p className="text-[10px] uppercase tracking-wide text-sky-200 font-semibold">
+              Este viaje
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight">
               € {formatLocaleNumber(totalEUR, 0)}
             </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500">
-              Total en {project.moneda_proyecto}
-            </p>
-            <p className="text-base font-bold text-slate-900">
-              {totalTripCurrency !== null && project.moneda_proyecto
-                ? `${formatLocaleNumber(totalTripCurrency, 0)} ${
-                    project.moneda_proyecto
-                  }`
-                : '—'}
-            </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500">Presupuesto (EUR)</p>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="mt-1 text-[11px] text-sky-100">
+              Presupuesto:{' '}
               {presupuesto > 0
                 ? `€ ${formatLocaleNumber(presupuesto, 0)}`
-                : 'Sin definir'}
+                : 'sin definir'}
             </p>
+
+            {presupuesto > 0 && (
+              <div className="mt-2">
+                <div className="h-1 w-28 bg-sky-900/60 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      budgetPercent <= 80
+                        ? 'bg-emerald-400'
+                        : budgetPercent <= 100
+                        ? 'bg-amber-300'
+                        : 'bg-rose-400',
+                    )}
+                    style={{ width: `${Math.min(budgetPercent, 130)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-sky-100">
+                  {budgetPercent.toFixed(0)}% del presupuesto usado
+                </p>
+              </div>
+            )}
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500">
-              {restante !== null ? 'Margen sobre presupuesto' : '—'}
-            </p>
-            <p
+
+          <div className="flex flex-col items-end text-right">
+            <span
               className={cn(
-                'text-sm font-semibold',
-                restante !== null
-                  ? restante >= 0
-                    ? 'text-emerald-600'
-                    : 'text-rose-600'
-                  : 'text-slate-400',
+                'px-2 py-1 rounded-lg text-[11px] font-semibold',
+                restante === null
+                  ? 'bg-sky-900/60 text-sky-100'
+                  : restante >= 0
+                  ? 'bg-emerald-500/20 text-emerald-200'
+                  : 'bg-rose-500/20 text-rose-100',
               )}
             >
-              {restante !== null
-                ? `${restante >= 0 ? '+' : '-'}€ ${formatLocaleNumber(
+              {restante === null
+                ? 'Sin presupuesto'
+                : restante >= 0
+                ? `Te quedan € ${formatLocaleNumber(restante, 0)}`
+                : `Te pasaste en € ${formatLocaleNumber(
                     Math.abs(restante),
                     0,
-                  )}`
-                : 'Define un presupuesto en la ficha del viaje.'}
-            </p>
+                  )}`}
+            </span>
+
+            {totalTripCurrency !== null && project.moneda_proyecto && (
+              <p className="mt-3 text-[11px] text-sky-100">
+                ≈ {formatLocaleNumber(totalTripCurrency, 0)}{' '}
+                {project.moneda_proyecto}
+              </p>
+            )}
           </div>
         </div>
       </Card>
@@ -565,9 +601,7 @@ export const TripDetail: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2 ml-12 text-[11px] text-slate-500">
-                      <span>
-                        € {formatLocaleNumber(baseEUR, 2)}
-                      </span>
+                      <span>€ {formatLocaleNumber(baseEUR, 2)}</span>
                       {muestraLocal && project.moneda_proyecto && (
                         <span className="text-slate-400">
                           · {formatLocaleNumber(localAmount, 2)}{' '}
