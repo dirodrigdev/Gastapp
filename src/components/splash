@@ -1,0 +1,32 @@
+import React from 'react';
+
+export const Splash: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="relative w-[320px] h-[190px] flex items-center justify-center">
+        {/* Trazo que se dibuja */}
+        <svg
+          width="320"
+          height="190"
+          viewBox="0 0 320 190"
+          className="overflow-visible"
+        >
+          <rect
+            x="10"
+            y="10"
+            width="300"
+            height="170"
+            rx="32"
+            ry="32"
+            className="splash-frame"
+          />
+        </svg>
+
+        {/* Caja central minimalista */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="splash-console-box" />
+        </div>
+      </div>
+    </div>
+  );
+};
