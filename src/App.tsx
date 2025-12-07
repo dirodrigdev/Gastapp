@@ -10,6 +10,7 @@ import { Settings } from './pages/Settings';
 import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
+import { TripDetail } from './pages/TripDetail'; // 👈 NUEVO
 
 // Wrapper de seguridad
 const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
@@ -37,6 +38,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/history"
             element={
@@ -45,6 +47,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/trips"
             element={
@@ -53,6 +56,17 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* 👇 NUEVA RUTA: detalle turquesa del viaje */}
+          <Route
+            path="/trips/:id"
+            element={
+              <ProtectedRoute>
+                <TripDetail />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/budgets"
             element={
@@ -61,6 +75,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/reports"
             element={
@@ -69,6 +84,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/settings"
             element={
