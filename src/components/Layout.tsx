@@ -24,7 +24,7 @@ export const Layout: React.FC = () => {
       label: 'Historial',
       icon: Clock,
     },
-    // 👉 Viajes (visible solo para Diego, por ahora)
+    // 👉 Viajes solo visible para Diego (por ahora)
     {
       to: '/trips',
       label: 'Viajes',
@@ -45,15 +45,17 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Banner de conexión */}
+      {/* Aviso de conexión */}
       <ConnectionBanner />
 
-      <main className="flex-1 max-w-md mx-auto w-full pb-24 pt-4">
+      {/* Contenido principal con animación suave de entrada */}
+      <main className="flex-1 max-w-md mx-auto w-full pb-20 opacity-0 animate-revealFromCenter">
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur">
-        <div className="max-w-md mx-auto flex justify-between px-4 pt-2 pb-5">
+      {/* Barra de navegación inferior */}
+      <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur pb-2">
+        <div className="max-w-md mx-auto flex justify-between px-4 pt-1.5 pb-3">
           {navItems
             .filter((item) => !item.onlyDiego || currentUser === 'Diego')
             .map((item) => {
