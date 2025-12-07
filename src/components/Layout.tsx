@@ -9,20 +9,20 @@ import {
 } from 'lucide-react';
 import { cn, ConnectionBanner } from './Components';
 
+// Relajamos el tipo del icono para que acepte sin problema los LucideIcon
 type NavItem = {
   to: string;
   label: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: React.ComponentType<any>;
+  /** Solo mostrar a usuarios con acceso a Viajes (Diego / Gastón) */
   onlyTripsUsers?: boolean;
 };
 
 export const Layout: React.FC = () => {
   const location = useLocation();
-  const currentUser = localStorage.getItem('currentUser');
+  const currentUser = localStorage.getItem('currentUser') || '';
 
-  // Quiénes pueden ver la pestaña Viajes
-  const canSeeTrips =
-    currentUser === 'Diego' || currentUser === 'Gastón';
+  const isTripsUser = currentUser === 'Diego' || currentUser === 'Gastón';
 
   const navItems: NavItem[] = [
     {
@@ -53,10 +53,6 @@ export const Layout: React.FC = () => {
     },
   ];
 
-  const filteredNavItems = navItems.filter((item) =>
-    item.onlyTripsUsers ? canSeeTrips : true,
-  );
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Aviso de conexión */}
@@ -70,24 +66,26 @@ export const Layout: React.FC = () => {
       {/* Barra de navegación inferior */}
       <nav className="fixed bottom-0 inset-x-0 border-t border-slate-200 bg-white/95 backdrop-blur pb-2">
         <div className="max-w-md mx-auto flex justify-between px-4 pt-1.5 pb-3">
-          {filteredNavItems.map((item) => {
-            const isActive = location.pathname === item.to;
-            const Icon = item.icon;
+          {navItems
+            .filter((item) => !item.onlyTripsUsers || isTripsUser)
+            .map((item) => {
+              const isActive = location.pathname === item.to;
+              const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  'flex flex-col items-center gap-0.5 flex-1 text-[11px]',
-                  isActive ? 'text-blue-600' : 'text-slate-400',
-                )}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 flex-1 text-[11px]',
+                    isActive ? 'text-blue-600' : 'text-slate-400',
+                  )}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
         </div>
       </nav>
     </div>
