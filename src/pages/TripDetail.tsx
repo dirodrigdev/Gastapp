@@ -289,6 +289,14 @@ export const TripDetail: React.FC = () => {
     );
   }
 
+  // Ordenar gastos por fecha descendente para últimos movimientos
+  const sortedExpenses = [...expenses].sort((a, b) => {
+    const da = a.fecha ? new Date(a.fecha).getTime() : 0;
+    const db = b.fecha ? new Date(b.fecha).getTime() : 0;
+    return db - da;
+  });
+  const lastExpenses = sortedExpenses.slice(0, 5);
+
   return (
     <div className="p-4 space-y-4 pb-24">
       {/* Header */}
@@ -331,8 +339,8 @@ export const TripDetail: React.FC = () => {
         <RefreshButton />
       </div>
 
-      {/* Resumen del viaje con ojito + blur */}
-      <Card className="relative bg-slate-900 text-white p-5 border-none shadow-xl overflow-hidden">
+      {/* Resumen del viaje con ojito + blur y tema azul/turquesa */}
+      <Card className="relative bg-gradient-to-br from-sky-900 via-sky-800 to-sky-700 text-white p-5 border-none shadow-xl overflow-hidden">
         {/* Contenido real */}
         <div
           className={cn(
@@ -343,20 +351,20 @@ export const TripDetail: React.FC = () => {
           <div className="flex justify-between items-start">
             <div className="z-10">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-sky-200 uppercase tracking-wider">
                   Resumen del viaje
                 </span>
               </div>
               <p className="text-3xl font-bold tracking-tight">
                 € {formatLocaleNumber(totalEUR, 0)}
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-sky-100/80 mt-1">
                 Gastado en este viaje (en EUR).
               </p>
             </div>
 
             <div className="text-right text-xs z-10">
-              <p className="text-slate-400 text-[10px] uppercase mb-1">
+              <p className="text-sky-200 text-[10px] uppercase mb-1">
                 Presupuesto
               </p>
               <p className="font-semibold">
@@ -368,7 +376,7 @@ export const TripDetail: React.FC = () => {
                 <p
                   className={cn(
                     'mt-1 text-[11px] font-semibold',
-                    restante >= 0 ? 'text-emerald-400' : 'text-rose-300',
+                    restante >= 0 ? 'text-emerald-200' : 'text-rose-200',
                   )}
                 >
                   {restante >= 0
@@ -382,15 +390,15 @@ export const TripDetail: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-2 gap-3 text-xs z-10">
+          <div className="mt-4 pt-3 border-t border-sky-700/80 grid grid-cols-2 gap-3 text-xs z-10">
             <div>
-              <span className="block text-slate-400 text-[10px] uppercase tracking-wider mb-1">
+              <span className="block text-sky-200 text-[10px] uppercase tracking-wider mb-1">
                 Moneda del viaje
               </span>
               <p className="font-semibold">
                 {project.moneda_proyecto || '—'}
               </p>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-sky-100/80 mt-1">
                 Ref: 1 EUR ≈{' '}
                 {project.tipo_cambio_referencia
                   ? `${formatLocaleNumber(project.tipo_cambio_referencia, 2)} ${
@@ -400,7 +408,7 @@ export const TripDetail: React.FC = () => {
               </p>
             </div>
             <div className="text-right">
-              <span className="block text-slate-400 text-[10px] uppercase tracking-wider mb-1">
+              <span className="block text-sky-200 text-[10px] uppercase tracking-wider mb-1">
                 Total en moneda viaje
               </span>
               <p className="font-semibold">
@@ -416,8 +424,8 @@ export const TripDetail: React.FC = () => {
 
         {/* Overlay de oculto */}
         {isSummaryHidden && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl flex flex-col items-center justify-center z-20 px-6">
-            <p className="text-xs text-slate-300 text-center mb-2">
+          <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-2xl flex flex-col items-center justify-center z-20 px-6">
+            <p className="text-xs text-sky-100 text-center mb-2">
               Toca “Ver” para mostrar el estado del presupuesto de este viaje.
             </p>
           </div>
@@ -427,7 +435,7 @@ export const TripDetail: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsSummaryHidden((prev) => !prev)}
-          className="absolute bottom-3 right-3 z-30 inline-flex items-center gap-1 rounded-full bg-slate-800/80 px-3 py-1 text-[10px] text-slate-100 hover:bg-slate-700/90"
+          className="absolute bottom-3 right-3 z-30 inline-flex items-center gap-1 rounded-full bg-sky-950/80 px-3 py-1 text-[10px] text-sky-50 hover:bg-sky-900/90"
         >
           {isSummaryHidden ? <Eye size={14} /> : <EyeOff size={14} />}
           <span>{isSummaryHidden ? 'Ver' : 'Ocultar'}</span>
@@ -581,11 +589,11 @@ export const TripDetail: React.FC = () => {
         </form>
       </Card>
 
-      {/* Historial de gastos */}
+      {/* Últimos movimientos del viaje */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Historial del viaje
+            Últimos movimientos del viaje
           </h3>
           {loadingExpenses && (
             <span className="text-[10px] text-slate-400">
@@ -594,16 +602,16 @@ export const TripDetail: React.FC = () => {
           )}
         </div>
 
-        {expenses.length === 0 && (
+        {lastExpenses.length === 0 && (
           <Card className="p-4 text-[12px] text-slate-400">
             Aún no registras gastos para este viaje. Empieza arriba con el
             formulario.
           </Card>
         )}
 
-        {expenses.length > 0 && (
+        {lastExpenses.length > 0 && (
           <Card className="divide-y divide-slate-100">
-            {expenses.map((exp) => {
+            {lastExpenses.map((exp) => {
               const fechaLabel = exp.fecha
                 ? format(new Date(exp.fecha), 'dd MMM', { locale: es })
                 : '';
