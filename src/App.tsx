@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
@@ -12,11 +12,8 @@ import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
 
-// 👇 OJO: nombre con mayúscula igual que el archivo
-import { Splash } from './components/Splash';
-
-// Flag rápida por si quieres desactivar el splash
-const ENABLE_SPLASH = true;
+// ⚠️ IMPORTANTE: sin Splash por ahora
+// import { Splash } from './components/Splash';
 
 const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   const user = localStorage.getItem('currentUser');
@@ -27,34 +24,13 @@ const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
 };
 
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState<boolean>(ENABLE_SPLASH);
-
-  useEffect(() => {
-    if (!ENABLE_SPLASH) {
-      setShowSplash(false);
-      return;
-    }
-
-    const alreadySeen = localStorage.getItem('gastapp_splash_seen');
-    if (alreadySeen === '1') {
-      setShowSplash(false);
-    }
-  }, []);
-
-  const handleSplashFinish = () => {
-    localStorage.setItem('gastapp_splash_seen', '1');
-    setShowSplash(false);
-  };
-
-  if (showSplash) {
-    return <Splash onFinish={handleSplashFinish} />;
-  }
-
   return (
     <HashRouter>
       <Routes>
+        {/* Onboarding público */}
         <Route path="/onboarding" element={<Onboarding />} />
 
+        {/* Resto de la app con Layout */}
         <Route element={<Layout />}>
           <Route
             path="/"
@@ -106,6 +82,7 @@ const App: React.FC = () => {
           />
         </Route>
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
