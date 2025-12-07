@@ -54,6 +54,14 @@ type CurrencyMode = 'EUR' | 'TRIP';
 
 const todayYMD = () => new Date().toISOString().slice(0, 10);
 
+const isSameDate = (a: Date, b: Date) => {
+  const da = new Date(a);
+  const db = new Date(b);
+  da.setHours(0, 0, 0, 0);
+  db.setHours(0, 0, 0, 0);
+  return da.getTime() === db.getTime();
+};
+
 export const TripDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -148,6 +156,29 @@ export const TripDetail: React.FC = () => {
     if (val > 0) setMonto(formatLocaleNumber(val, 2));
   };
 
+  // Orden de categorías por uso (más usadas primero)
+  const usageCount: Record<string, number> = {};
+  expenses.forEach((e) => {
+    if (e.categoria && TRIP_CATEGORIES.includes(e.categoria)) {
+      usageCount[e.categoria] = (usageCount[e.categoria] || 0) + 1;
+    }
+  });
+
+  const baseOrder: Record<string, number> = TRIP_CATEGORIES.reduce(
+    (acc, name, idx) => {
+      acc[name] = idx;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  const sortedTripCategories = [...TRIP_CATEGORIES].sort((a, b) => {
+    const ca = usageCount[a] || 0;
+    const cb = usageCount[b] || 0;
+    if (cb !== ca) return cb - ca;
+    return (baseOrder[a] ?? 0) - (baseOrder[b] ?? 0);
+  });
+
   // ============ HANDLERS GASTOS ============
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -168,7 +199,7 @@ export const TripDetail: React.FC = () => {
     const fechaISO = new Date(`${fecha}T00:00:00`).toISOString();
     let monto_en_moneda_principal = 0;
     let monto_en_moneda_proyecto = 0;
-    let monto_original = amount;
+    const monto_original = amount;
     let moneda_original: string;
     let tipo_cambio_usado = 0;
 
@@ -296,6 +327,11 @@ export const TripDetail: React.FC = () => {
     return db - da;
   });
   const lastExpenses = sortedExpenses.slice(0, 5);
+
+  const fechaDate = new Date(fecha);
+  const fechaLabel = isSameDate(fechaDate, new Date())
+    ? 'HOY'
+    : format(fechaDate, 'd MMM', { locale: es }).toUpperCase();
 
   return (
     <div className="p-4 space-y-4 pb-24">
@@ -485,7 +521,7 @@ export const TripDetail: React.FC = () => {
               >
                 <CalendarIcon size={18} aria-hidden="true" />
                 <span className="text-[9px] font-bold">
-                  {format(new Date(fecha), 'd MMM', { locale: es }).toUpperCase()}
+                  {fechaLabel}
                 </span>
                 <input
                   type="date"
@@ -498,13 +534,13 @@ export const TripDetail: React.FC = () => {
             </div>
           </div>
 
-          {/* Categorías en chips horizontales */}
+          {/* Categorías en chips horizontales (ordenadas por uso) */}
           <div
             role="group"
             aria-label="Categoría del gasto de viaje"
             className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1"
           >
-            {TRIP_CATEGORIES.map((cat) => {
+            {sortedTripCategories.map((cat) => {
               const isSelected = categoria === cat;
               return (
                 <button
@@ -612,7 +648,7 @@ export const TripDetail: React.FC = () => {
         {lastExpenses.length > 0 && (
           <Card className="divide-y divide-slate-100">
             {lastExpenses.map((exp) => {
-              const fechaLabel = exp.fecha
+              const fechaLabelExp = exp.fecha
                 ? format(new Date(exp.fecha), 'dd MMM', { locale: es })
                 : '';
               const baseEUR =
@@ -629,7 +665,7 @@ export const TripDetail: React.FC = () => {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-slate-400 w-12">
-                        {fechaLabel}
+                        {fechaLabelExp}
                       </span>
                       <span className="text-[12px] font-medium text-slate-800">
                         {exp.categoria}
