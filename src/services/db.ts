@@ -135,16 +135,19 @@ export const addProjectExpense = async (
   await addDoc(colRef, payload);
 };
 
-// Actualizar gasto de proyecto (por si lo necesitas en ProjectDetail)
+// Actualizar gasto de proyecto (firma con UN solo parámetro)
 export const updateProjectExpense = async (
-  id: string,
-  data: Partial<ProjectExpense>
+  expense: ProjectExpense
 ): Promise<void> => {
+  if (!expense.id) return;
+  const { id, ...rest } = expense;
   const docRef = doc(db, PROJECT_EXPENSES_COLLECTION, id);
-  const clean: any = { ...data };
+
+  const clean: any = { ...rest };
   Object.keys(clean).forEach((k) => {
     if (clean[k] === undefined) delete clean[k];
   });
+
   await updateDoc(docRef, clean);
 };
 
@@ -234,7 +237,7 @@ export const subscribeToCategories = (
   return unsubscribe;
 };
 
-// Obtener categorías una vez (por si algún sitio lo usa)
+// Obtener categorías una vez
 export const getCategories = async (): Promise<Category[]> => {
   const colRef = collection(db, CATEGORIES_COLLECTION);
   const snapshot = await getDocs(colRef);
@@ -305,8 +308,9 @@ export const getMonthlyReports = async (): Promise<any[]> => {
 };
 
 // Generar reporte de cierre
-// Dejo la firma genérica para que acepte lo que le mande Settings.tsx
-export const generateClosingReport = async (reportData: any): Promise<string> => {
+export const generateClosingReport = async (
+  reportData: any
+): Promise<string> => {
   const colRef = collection(db, MONTHLY_REPORTS_COLLECTION);
 
   const payload: any = { ...(reportData || {}) };
@@ -314,7 +318,6 @@ export const generateClosingReport = async (reportData: any): Promise<string> =>
     if (payload[k] === undefined) delete payload[k];
   });
 
-  // si no trae nada, al menos guardamos un timestamp
   if (!payload.fechaFin && !payload.fechaInicio) {
     payload.createdAt = new Date().toISOString();
   }
