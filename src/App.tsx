@@ -1,9 +1,7 @@
-// src/App.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
-
 import { Onboarding } from './pages/Onboarding';
 import { Home } from './pages/Home';
 import { History } from './pages/History';
@@ -12,10 +10,10 @@ import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
 
-import { Splash } from './components/Splash';
+import Splash from './components/Splash';
 
-// Wrapper de seguridad
-const ProtectedRoute: React.FC<React.PropsWithChildren> = ({ children }) => {
+// Pequeño wrapper para proteger rutas si no hay usuario
+const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   const user = localStorage.getItem('currentUser');
   if (!user) {
     return <Navigate to="/onboarding" replace />;
@@ -23,32 +21,35 @@ const ProtectedRoute: React.FC<React.PropsWithChildren> = ({ children }) => {
   return <>{children}</>;
 };
 
+// Flag para activar/desactivar el splash fácilmente
+const shouldUseSplash =
+  (import.meta as any)?.env?.VITE_ENABLE_SPLASH !== '0';
+
 const App: React.FC = () => {
-  // Leemos la flag de entorno, pero castear import.meta a any
-  // para que TS no se queje aunque falte vite-env.d.ts
-  const enableSplash =
-    ((import.meta as any)?.env?.VITE_ENABLE_SPLASH ?? 'true') !== 'false';
+  const [showSplash, setShowSplash] = useState<boolean>(shouldUseSplash);
 
-  const [showSplash, setShowSplash] = useState<boolean>(enableSplash);
-
+  // Seguridad extra: si por cualquier cosa no se dispara onFinish
   useEffect(() => {
-    if (!enableSplash) {
+    if (!shouldUseSplash) return;
+    const maxTimeout = setTimeout(() => {
       setShowSplash(false);
-    }
-  }, [enableSplash]);
-
-  // Mientras el splash esté activo, mostramos solo eso
-  if (showSplash) {
-    return <Splash onFinish={() => setShowSplash(false)} />;
-  }
+    }, 3000);
+    return () => clearTimeout(maxTimeout);
+  }, []);
 
   return (
     <HashRouter>
+      {/* Splash por encima de todo */}
+      {showSplash && shouldUseSplash && (
+        <Splash onFinish={() => setShowSplash(false)} />
+      )}
+
+      {/* La app vive siempre detrás; mientras showSplash=true, queda “tapada” */}
       <Routes>
         {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Rutas privadas con layout común */}
+        {/* Rutas privadas envueltas en Layout */}
         <Route element={<Layout />}>
           <Route
             path="/"
