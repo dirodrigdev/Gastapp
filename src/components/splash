@@ -1,31 +1,29 @@
-import React from 'react';
+// src/components/Splash.tsx
+import React, { useEffect } from 'react';
 
-export const Splash: React.FC = () => {
+interface SplashProps {
+  onFinish?: () => void;
+}
+
+/**
+ * Pantalla de splash:
+ * - Fondo negro
+ * - “consola” central con borde animado
+ * - Tras ~1.6s llama a onFinish y deja paso a la app
+ */
+export const Splash: React.FC<SplashProps> = ({ onFinish }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onFinish?.();
+    }, 1600); // duración total de la animación
+
+    return () => clearTimeout(timer);
+  }, [onFinish]);
+
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="relative w-[320px] h-[190px] flex items-center justify-center">
-        {/* Trazo que se dibuja */}
-        <svg
-          width="320"
-          height="190"
-          viewBox="0 0 320 190"
-          className="overflow-visible"
-        >
-          <rect
-            x="10"
-            y="10"
-            width="300"
-            height="170"
-            rx="32"
-            ry="32"
-            className="splash-frame"
-          />
-        </svg>
-
-        {/* Caja central minimalista */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="splash-console-box" />
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950">
+      <div className="splash-console">
+        <div className="splash-console-inner" />
       </div>
     </div>
   );
