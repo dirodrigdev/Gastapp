@@ -184,6 +184,11 @@ export const Trips: React.FC = () => {
       return;
     }
 
+    if (!noches.trim()) {
+      setFormError('Las noches de hotel son obligatorias.');
+      return;
+    }
+
     // Resolver moneda del viaje
     let finalCurrency: CurrencyType;
     if (selectedCurrency === 'OTRA') {
@@ -206,7 +211,7 @@ export const Trips: React.FC = () => {
     }
 
     const personasValue = personas ? parseInt(personas, 10) : undefined;
-    const nochesValue = noches ? parseInt(noches, 10) : undefined;
+    const nochesValue = parseInt(noches, 10);
     const tipoCambioValue = tipoCambio
       ? parseLocaleNumber(tipoCambio)
       : undefined;
@@ -253,6 +258,11 @@ export const Trips: React.FC = () => {
       return;
     }
 
+    if (!noches.trim()) {
+      setFormError('Las noches de hotel son obligatorias.');
+      return;
+    }
+
     // Moneda
     let finalCurrency: CurrencyType;
     if (selectedCurrency === 'OTRA') {
@@ -275,7 +285,7 @@ export const Trips: React.FC = () => {
     }
 
     const personasValue = personas ? parseInt(personas, 10) : undefined;
-    const nochesValue = noches ? parseInt(noches, 10) : undefined;
+    const nochesValue = parseInt(noches, 10);
     const tipoCambioValue = tipoCambio
       ? parseLocaleNumber(tipoCambio)
       : undefined;
@@ -529,7 +539,7 @@ export const Trips: React.FC = () => {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                  Noches de hotel
+                  Noches de hotel *
                   <Moon size={10} className="text-slate-400" />
                 </label>
                 <Input
@@ -593,16 +603,13 @@ export const Trips: React.FC = () => {
             return (
               <Card
                 key={p.id}
+                onClick={() => handleOpenTrip(p)}
                 className={cn(
-                  'p-4 border border-slate-100 shadow-sm flex flex-col gap-2',
+                  'p-4 border border-slate-100 shadow-sm flex flex-col gap-2 cursor-pointer',
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenTrip(p)}
-                    className="flex items-center gap-2 text-left flex-1"
-                  >
+                  <div className="flex items-center gap-2 text-left flex-1">
                     <div
                       className={cn(
                         'h-9 w-9 rounded-xl flex items-center justify-center text-white',
@@ -624,7 +631,7 @@ export const Trips: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  </button>
+                  </div>
 
                   <div className="flex flex-col items-end gap-2">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600">
@@ -633,7 +640,10 @@ export const Trips: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => handleClickEdit(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClickEdit(p);
+                        }}
                         className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-slate-200 text-[11px] text-slate-600 hover:bg-slate-50"
                       >
                         <Edit3 size={12} />
@@ -641,7 +651,10 @@ export const Trips: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteProject(p)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProject(p);
+                        }}
                         className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-500 text-white hover:bg-red-600"
                       >
                         <Trash2 size={14} />
