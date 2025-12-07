@@ -2,6 +2,7 @@ import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
+
 import { Onboarding } from './pages/Onboarding';
 import { Home } from './pages/Home';
 import { History } from './pages/History';
@@ -9,12 +10,6 @@ import { Settings } from './pages/Settings';
 import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
-
-import Splash from './components/Splash';
-
-// Flag para activar/desactivar el splash fácilmente
-const shouldUseSplash =
-  (import.meta as any)?.env?.VITE_ENABLE_SPLASH !== '0';
 
 const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   const user = localStorage.getItem('currentUser');
@@ -27,14 +22,11 @@ const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
 const App: React.FC = () => {
   return (
     <HashRouter>
-      {/* Splash encima de todo, la app siempre está detrás */}
-      {shouldUseSplash && <Splash />}
-
       <Routes>
         {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Rutas privadas envueltas en Layout */}
+        {/* Rutas privadas con Layout */}
         <Route element={<Layout />}>
           <Route
             path="/"
