@@ -2,28 +2,34 @@ import React, { useEffect, useState } from 'react';
 import { cn } from './Components';
 
 interface SplashProps {
+  // Por si en el futuro quieres enganchar algo, pero ahora NO lo necesitamos
   onFinish?: () => void;
 }
 
 /**
- * Splash animado:
- * - Fase 0: marco tipo iPhone en el centro
- * - Fase 1: se “comprime” a formato consola central
- * - Fase 2: pequeño zoom / golpe y fade out (lo maneja App)
+ * Splash animado autónomo:
+ * - Fase "phone": marco tipo iPhone centrado.
+ * - Fase "console": se comprime a forma de consola GastApp.
+ * - Luego hace un pequeño settle y desaparece (fade out).
+ *
+ * Importante: el propio Splash se auto-oculta (return null)
+ * después de la animación. No bloquea la app.
  */
 const Splash: React.FC<SplashProps> = ({ onFinish }) => {
   const [phase, setPhase] = useState<'phone' | 'console'>('phone');
+  const [visible, setVisible] = useState<boolean>(true);
 
   useEffect(() => {
-    // Pasar de marco tipo iPhone a consola
+    // 1) Pasar de marco "iPhone" a consola
     const t1 = setTimeout(() => {
       setPhase('console');
     }, 550);
 
-    // Terminar splash y mostrar app
+    // 2) Desaparecer splash (fade out + desmontar)
     const t2 = setTimeout(() => {
+      setVisible(false);
       onFinish?.();
-    }, 1500);
+    }, 1600);
 
     return () => {
       clearTimeout(t1);
@@ -31,9 +37,10 @@ const Splash: React.FC<SplashProps> = ({ onFinish }) => {
     };
   }, [onFinish]);
 
+  if (!visible) return null;
+
   return (
     <>
-      {/* Keyframes locales para el borde giratorio */}
       <style>{`
         @keyframes gastappSpinBorder {
           0% { transform: rotate(0deg); }
@@ -49,15 +56,15 @@ const Splash: React.FC<SplashProps> = ({ onFinish }) => {
             // Fase marco tipo iPhone
             phase === 'phone' &&
               'w-[78vw] max-w-sm aspect-[9/19] rounded-[40px]',
-            // Fase consola (más baja, más ancha)
+            // Fase consola GastApp (más baja, más ancha)
             phase === 'console' &&
               'w-[88vw] max-w-md h-[220px] rounded-[30px] translate-y-[-10px] scale-[0.98]',
           )}
         >
-          {/* Glow externo suave */}
+          {/* Glow externo */}
           <div className="absolute inset-[-14px] rounded-[46px] bg-slate-900/40 blur-xl" />
 
-          {/* Marco degradado animado */}
+          {/* Marco multicolor girando */}
           <div className="relative w-full h-full rounded-[40px]">
             <div
               className="absolute inset-0 rounded-[40px] p-[2px]"
@@ -67,7 +74,7 @@ const Splash: React.FC<SplashProps> = ({ onFinish }) => {
                 animation: 'gastappSpinBorder 3.5s linear infinite',
               }}
             >
-              {/* “Vidrio” interior oscuro */}
+              {/* Interior oscuro tipo “vidrio” */}
               <div className="w-full h-full rounded-[36px] bg-slate-950/95 shadow-[0_18px_60px_rgba(0,0,0,0.75)]" />
             </div>
 
