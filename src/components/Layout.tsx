@@ -58,8 +58,8 @@ export const Layout: React.FC = () => {
       {/* Aviso de conexión */}
       <ConnectionBanner />
 
-      {/* Contenido principal con animación suave de entrada */}
-      <main className="flex-1 max-w-md mx-auto w-full pb-20 opacity-0 animate-revealFromCenter">
+      {/* Contenido principal (SIN opacity-0, SIN animación rara) */}
+      <main className="flex-1 max-w-md mx-auto w-full pb-20">
         <Outlet />
       </main>
 
