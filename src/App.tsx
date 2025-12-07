@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+// src/App.tsx
+import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import { Layout } from './components/Layout';
-import { Splash } from './components/Splash';
 
 import { Onboarding } from './pages/Onboarding';
 import { Home } from './pages/Home';
@@ -12,9 +12,10 @@ import { Budgets } from './pages/Budgets';
 import { Reports } from './pages/Reports';
 import { Trips } from './pages/Trips';
 
-// ---------------- PROTECCIÓN BÁSICA ----------------
+import { Splash } from './components/Splash';
 
-const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
+// Wrapper de seguridad
+const ProtectedRoute: React.FC<React.PropsWithChildren> = ({ children }) => {
   const user = localStorage.getItem('currentUser');
   if (!user) {
     return <Navigate to="/onboarding" replace />;
@@ -22,42 +23,23 @@ const ProtectedRoute = ({ children }: React.PropsWithChildren<{}>) => {
   return <>{children}</>;
 };
 
-// --------------- LÓGICA PARA MOSTRAR SPLASH ---------------
-
-const shouldShowSplash = (): boolean => {
-  // 1) flag global por entorno (puedes poner VITE_ENABLE_SPLASH=false en .env)
-  if (import.meta.env.VITE_ENABLE_SPLASH === 'false') return false;
-
-  // 2) usuarios con “reduced motion”
-  if (typeof window !== 'undefined') {
-    try {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        return false;
-      }
-    } catch {
-      // ignoramos fallo silencioso
-    }
-  }
-
-  // 3) toggle manual en localStorage
-  const flag = localStorage.getItem('gastapp:disableSplash');
-  if (flag === '1') return false;
-
-  return true;
-};
-
 const App: React.FC = () => {
-  const [showSplash, setShowSplash] = useState<boolean>(() => shouldShowSplash());
+  // Leemos la flag de entorno, pero castear import.meta a any
+  // para que TS no se queje aunque falte vite-env.d.ts
+  const enableSplash =
+    ((import.meta as any)?.env?.VITE_ENABLE_SPLASH ?? 'true') !== 'false';
+
+  const [showSplash, setShowSplash] = useState<boolean>(enableSplash);
 
   useEffect(() => {
-    if (!showSplash) return;
-    // duración total aprox de las animaciones (700 + 550 ms) + pequeño margen
-    const t = setTimeout(() => setShowSplash(false), 1300);
-    return () => clearTimeout(t);
-  }, [showSplash]);
+    if (!enableSplash) {
+      setShowSplash(false);
+    }
+  }, [enableSplash]);
 
+  // Mientras el splash esté activo, mostramos solo eso
   if (showSplash) {
-    return <Splash />;
+    return <Splash onFinish={() => setShowSplash(false)} />;
   }
 
   return (
@@ -66,7 +48,7 @@ const App: React.FC = () => {
         {/* Ruta pública */}
         <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Rutas privadas con layout */}
+        {/* Rutas privadas con layout común */}
         <Route element={<Layout />}>
           <Route
             path="/"
@@ -93,14 +75,6 @@ const App: React.FC = () => {
             }
           />
           <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/budgets"
             element={
               <ProtectedRoute>
@@ -113,6 +87,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Reports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />
